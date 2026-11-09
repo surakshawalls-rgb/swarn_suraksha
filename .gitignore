@@ -1,0 +1,14 @@
+node_modules/
+.npm-cache/
+dist/
+.angular/
+.test-build/
+out-tsc/
+coverage/
+supabase/.temp/
+*.zip
+*.rar
+*.bak
+.env
+.env.*
+!.env.example
