@@ -23,9 +23,9 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
         </label>
         <div class="shell-active" *ngIf="activeWorkspace && workspaces.length === 1"><small>ACTIVE BUSINESS</small><b>{{activeWorkspace.name}}</b></div>
         <nav aria-label="Main navigation">
-          <a routerLink="/dashboard" routerLinkActive="selected" [routerLinkActiveOptions]="{ exact: true }">Home</a>
-          <a routerLink="/dashboard/sales" routerLinkActive="selected">Bill</a>
-          <a routerLink="/dashboard/girvi" routerLinkActive="selected">Girvi</a>
+          <a routerLink="/dashboard" routerLinkActive="selected" [routerLinkActiveOptions]="{ exact: true }"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>Home</span></a>
+          <a routerLink="/dashboard/sales" routerLinkActive="selected"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h10v18l-2.5-1.6L12 21l-2.5-1.6L7 21V3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 8h4M10 12h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Bill</span></a>
+          <a routerLink="/dashboard/girvi" routerLinkActive="selected"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg><span>Girvi</span></a>
         </nav>
         <div class="shell-user"><span class="avatar">{{initials}}</span><span><b>{{userName}}</b><small>Signed in securely</small></span><button type="button" (click)="signOut()" [disabled]="busy">Sign out</button></div>
       </aside>

@@ -23,10 +23,10 @@ interface PendingPurchase { key: string; supplierId: string; lines: object[]; pa
   standalone: true,
   imports: [CommonModule, FormsModule, IonicModule, RouterLink, LedgerPaymentComponent],
   template: `
-    <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>â€º</span><b>Purchases</b></div><div class="top-actions"><button *ngIf="canPostPurchases" class="primary-btn" type="button" (click)="editing = !editing" [disabled]="!!pending">ï¼‹ Record purchase</button></div></header>
+    <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>›</span><b>Purchases</b></div><div class="top-actions"><button *ngIf="canPostPurchases" class="primary-btn" type="button" (click)="editing = !editing" [disabled]="!!pending"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Record purchase</button></div></header>
     <section class="content customers-page purchases-page">
-      <div class="welcome"><div><p class="eyebrow">SUPPLIER PURCHASES Â· OWNED STOCK</p><h1>Purchases</h1><p class="subtitle">Posted purchases increase business-owned inventory. Customer pledged items are tracked separately.</p></div></div>
-      <div class="config-banner" role="note"><span class="banner-icon">i</span><div><b>Amounts are captured at purchase time</b><p>Line cost is net grams Ã— cost per gram plus additional charges, rounded to paise. Tax is not added because this business has no verified tax configuration.</p></div></div>
+      <div class="welcome"><div><p class="eyebrow">SUPPLIER PURCHASES · OWNED STOCK</p><h1>Purchases</h1><p class="subtitle">Posted purchases increase business-owned inventory. Customer pledged items are tracked separately.</p></div></div>
+      <div class="config-banner" role="note"><span class="banner-icon">i</span><div><b>Amounts are captured at purchase time</b><p>Line cost is net grams × cost per gram plus additional charges, rounded to paise. Tax is not added because this business has no verified tax configuration.</p></div></div>
       <div class="config-banner error-banner" *ngIf="errorMessage" role="alert"><span class="banner-icon">!</span><div><b>Purchase data unavailable</b><p>{{errorMessage}}</p></div><button class="text-btn" type="button" (click)="load()">Retry</button></div>
       <p class="save-success" *ngIf="successMessage" role="status">{{successMessage}}</p>
       <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Loading purchase records</b><p>Reading tenant-scoped purchases and owned inventory movements.</p></div></div>
@@ -43,17 +43,17 @@ interface PendingPurchase { key: string; supplierId: string; lines: object[]; pa
               <label>Purity / grade<input [(ngModel)]="line.purity" [name]="'purity' + i" maxlength="40" placeholder="e.g. 22K"></label>
               <label>Gross weight (g)<input [(ngModel)]="line.gross_weight_g" [name]="'gross' + i" inputmode="decimal" required></label>
               <label>Net weight (g)<input [(ngModel)]="line.net_weight_g" [name]="'net' + i" inputmode="decimal" required></label>
-              <label>Cost / gram (â‚¹)<input [(ngModel)]="line.unit_cost_per_gram" [name]="'cost' + i" inputmode="decimal" required></label>
-              <label>Additional cost (â‚¹)<input [(ngModel)]="line.additional_cost" [name]="'extra' + i" inputmode="decimal" value="0"></label>
+              <label>Cost / gram (₹)<input [(ngModel)]="line.unit_cost_per_gram" [name]="'cost' + i" inputmode="decimal" required></label>
+              <label>Additional cost (₹)<input [(ngModel)]="line.additional_cost" [name]="'extra' + i" inputmode="decimal" value="0"></label>
               <div class="line-total"><span>Line total</span><b>{{lineTotal(line)}}</b></div>
             </div>
-            <button class="text-btn" type="button" (click)="addLine()" [disabled]="lines.length >= 100">ï¼‹ Add item line</button>
+            <button class="text-btn" type="button" (click)="addLine()" [disabled]="lines.length >= 100"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Add another item</button>
           </div>
           <div class="purchase-payments">
-            <div class="line-heading"><b>Payments (optional; split payments supported)</b><button class="text-btn" type="button" (click)="addPayment()" [disabled]="payments.length >= 20">ï¼‹ Add payment</button></div>
+            <div class="line-heading"><b>Payments (optional; split payments supported)</b><button class="text-btn" type="button" (click)="addPayment()" [disabled]="payments.length >= 20"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Add payment</button></div>
             <div class="payment-line" *ngFor="let payment of payments; let i = index">
               <label>Method<select [(ngModel)]="payment.method" [name]="'paymentMethod' + i"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label>
-              <label>Amount (â‚¹)<input [(ngModel)]="payment.amount" [name]="'paymentAmount' + i" inputmode="decimal"></label>
+              <label>Amount (₹)<input [(ngModel)]="payment.amount" [name]="'paymentAmount' + i" inputmode="decimal"></label>
               <label>Reference (optional)<input [(ngModel)]="payment.reference" [name]="'paymentReference' + i" maxlength="120"></label>
               <button class="text-btn danger-text" type="button" (click)="removePayment(i)">Remove</button>
             </div>
@@ -61,37 +61,37 @@ interface PendingPurchase { key: string; supplierId: string; lines: object[]; pa
           <div class="purchase-summary"><span>Purchase total</span><b>{{totalLabel}}</b><span>Paid now</span><b>{{paidLabel}}</b><span>Balance payable</span><b>{{balanceLabel}}</b></div>
           <p class="duplicate-warning" role="note">Confirm supplier, metal, purity, gross/net weights, cost, and payments. Posting cannot be edited or deleted; corrections will be handled by a reversal workflow.</p>
           <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p>
-          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !(network.online$ | async) || !supplierId || !suppliers.length">{{saving ? 'Posting atomicallyâ€¦' : !(network.online$ | async) ? 'Offline â€” posting disabled' : 'Post purchase'}}</button><span>Amounts are validated again by the database.</span></div>
+          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !(network.online$ | async) || !supplierId || !suppliers.length">{{saving ? 'Posting atomically…' : !(network.online$ | async) ? 'Offline — posting disabled' : 'Post purchase'}}</button><span>Amounts are validated again by the database.</span></div>
         </form>
       </section>
       <div class="config-banner" *ngIf="workspace?.role === 'staff'" role="status"><span class="banner-icon">i</span><div><b>Purchase posting is restricted</b><p>Only workspace owners and administrators can post supplier purchases until the business configures its staff permission policy.</p></div></div>
       <section class="panel customer-editor pending-purchase" *ngIf="pending">
         <b>Purchase result is not confirmed</b><p>The request may have reached Supabase. Retry the exact same payload safely; the idempotency key prevents a duplicate posting.</p>
-        <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><button class="primary-btn" type="button" (click)="post()" [disabled]="saving || !(network.online$ | async)">{{saving ? 'Checking resultâ€¦' : 'Retry same purchase safely'}}</button>
+        <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><button class="primary-btn" type="button" (click)="post()" [disabled]="saving || !(network.online$ | async)">{{saving ? 'Checking result…' : 'Retry same purchase safely'}}</button>
       </section>
 
       <section id="inventory" class="panel customer-list inventory-panel">
         <div class="panel-head"><div><h2>Owned inventory on hand</h2><p>Derived from purchase receipt movements. Pledged customer property is excluded.</p></div></div>
-        <div class="inventory-grid" *ngIf="inventoryBalances.length; else noOwnedStock"><article class="inventory-balance" *ngFor="let row of inventoryBalances"><span>{{row.metal | titlecase}}{{row.purity ? ' Â· ' + row.purity : ''}}</span><b>{{formatFixed(row.weight, 4)}} g</b></article></div>
+        <div class="inventory-grid" *ngIf="inventoryBalances.length; else noOwnedStock"><article class="inventory-balance" *ngFor="let row of inventoryBalances"><span>{{row.metal | titlecase}}{{row.purity ? ' · ' + row.purity : ''}}</span><b>{{formatFixed(row.weight, 4)}} g</b></article></div>
         <ng-template #noOwnedStock><div class="empty-state inventory-empty"><b>No owned-stock movement yet</b><p>Posted supplier purchases will add stock balances here.</p></div></ng-template>
       </section>
 
       <section class="panel customer-list purchase-history" *ngIf="!loading">
         <div class="panel-head"><div><h2>Recent posted purchases</h2><p>Each payment and stock movement is linked to its source purchase.</p></div><button class="text-btn" type="button" (click)="load()">Refresh</button></div>
         <div class="table-wrap" *ngIf="purchases.length; else emptyPurchases"><table><thead><tr><th>Purchase</th><th>Supplier</th><th>Items received</th><th>Total</th><th>Paid</th><th>Balance</th><th>Settlement</th><th>Receipt</th><th>Recorded</th></tr></thead><tbody>
-          <tr *ngFor="let purchase of purchases"><td><b>#{{purchase.purchase_number}}</b></td><td>{{supplierName(purchase.supplier_id)}}</td><td><span *ngFor="let line of linesFor(purchase.id); let last = last">{{line.item_description}} Â· {{line.net_weight_g}} g{{last ? '' : '; '}}</span></td><td>{{inr(purchase.subtotal)}}</td><td>{{inr(purchase.paid_total)}}<small>{{paymentMethods(purchase.id)}}</small></td><td>{{balance(purchase)}}</td><td><ss-ledger-payment *ngIf="canPostPurchases" kind="purchase" [businessId]="workspace!.id" [transactionId]="purchase.id" [remaining]="balanceAmount(purchase)" (saved)="load()"></ss-ledger-payment></td><td><button *ngIf="canPostPurchases" class="text-btn" type="button" (click)="openReceipt(purchase)">Print voucher</button></td><td>{{purchase.created_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</td></tr>
+          <tr *ngFor="let purchase of purchases"><td><b>#{{purchase.purchase_number}}</b></td><td>{{supplierName(purchase.supplier_id)}}</td><td><span *ngFor="let line of linesFor(purchase.id); let last = last">{{line.item_description}} · {{line.net_weight_g}} g{{last ? '' : '; '}}</span></td><td>{{inr(purchase.subtotal)}}</td><td>{{inr(purchase.paid_total)}}<small>{{paymentMethods(purchase.id)}}</small></td><td>{{balance(purchase)}}</td><td><ss-ledger-payment *ngIf="canPostPurchases" kind="purchase" [businessId]="workspace!.id" [transactionId]="purchase.id" [remaining]="balanceAmount(purchase)" (saved)="load()"></ss-ledger-payment></td><td><button *ngIf="canPostPurchases" class="text-btn" type="button" (click)="openReceipt(purchase)">Print voucher</button></td><td>{{purchase.created_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</td></tr>
         </tbody></table></div>
-        <ng-template #emptyPurchases><div class="empty-state customer-empty"><span class="empty-art">â‚¹</span><b>No purchases recorded</b><p>Active suppliers are needed before receiving owned-stock purchase lines.</p><a class="text-btn" routerLink="/dashboard/suppliers">Open suppliers â†’</a></div></ng-template>
+        <ng-template #emptyPurchases><div class="empty-state customer-empty"><span class="empty-art">₹</span><b>No purchases recorded</b><p>Active suppliers are needed before receiving owned-stock purchase lines.</p><a class="text-btn" routerLink="/dashboard/suppliers">Open suppliers →</a></div></ng-template>
       </section>
     </section>
     <div class="receipt-overlay" *ngIf="receiptPurchase as receipt" role="dialog" aria-modal="true" aria-label="Supplier purchase voucher preview">
-      <div class="receipt-screen"><div class="receipt-actions"><p *ngIf="receiptError" class="form-error" role="alert">{{receiptError}}</p><label>Layout<select [(ngModel)]="receiptFormat" name="purchaseReceiptFormat"><option value="a4">A4</option><option value="thermal">Thermal Â· 80 mm</option></select></label><button class="primary-btn" type="button" (click)="printReceipt()" [disabled]="receiptPrinting">{{receiptPrinting?'Preparingâ€¦':'Print voucher'}}</button><button class="text-btn" type="button" (click)="closeReceipt()" [disabled]="receiptPrinting">Close preview</button><span role="status">Print is requested from your device; completion is not confirmed by this app.</span></div>
+      <div class="receipt-screen"><div class="receipt-actions"><p *ngIf="receiptError" class="form-error" role="alert">{{receiptError}}</p><label>Layout<select [(ngModel)]="receiptFormat" name="purchaseReceiptFormat"><option value="a4">A4</option><option value="thermal">Thermal · 80 mm</option></select></label><button class="primary-btn" type="button" (click)="printReceipt()" [disabled]="receiptPrinting">{{receiptPrinting?'Preparing…':'Print voucher'}}</button><button class="text-btn" type="button" (click)="closeReceipt()" [disabled]="receiptPrinting">Close preview</button><span role="status">Print is requested from your device; completion is not confirmed by this app.</span></div>
         <article class="receipt-print" [class.receipt-thermal]="receiptFormat==='thermal'"><header><span class="brand-mark">S</span><h1>{{workspace?.name || 'SwarnaSuraksha Business'}}</h1><p>SUPPLIER PURCHASE VOUCHER</p></header><hr>
           <div class="receipt-meta"><span>Purchase</span><b>#{{receipt.purchase_number}}</b><span>Date</span><b>{{receipt.created_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</b><span>Supplier</span><b>{{supplierName(receipt.supplier_id)}}</b></div>
-          <table><thead><tr><th>Item</th><th>Gross / net wt.</th><th>Cost / g</th><th>Other</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let line of linesFor(receipt.id)"><td>{{line.item_description}}<small>{{line.metal | titlecase}}{{line.purity ? ' Â· '+line.purity : ''}}</small></td><td>{{line.gross_weight_g}} / {{line.net_weight_g}} g</td><td>{{inr(line.unit_cost_per_gram)}}</td><td>{{inr(line.additional_cost)}}</td><td>{{inr(line.line_total)}}</td></tr></tbody></table>
+          <table><thead><tr><th>Item</th><th>Gross / net wt.</th><th>Cost / g</th><th>Other</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let line of linesFor(receipt.id)"><td>{{line.item_description}}<small>{{line.metal | titlecase}}{{line.purity ? ' · '+line.purity : ''}}</small></td><td>{{line.gross_weight_g}} / {{line.net_weight_g}} g</td><td>{{inr(line.unit_cost_per_gram)}}</td><td>{{inr(line.additional_cost)}}</td><td>{{inr(line.line_total)}}</td></tr></tbody></table>
           <div class="receipt-totals"><span>Subtotal</span><b>{{inr(receipt.subtotal)}}</b><span>Tax</span><b>Not configured</b><span>Paid</span><b>{{inr(receipt.paid_total)}}</b><span>Balance payable</span><b>{{balance(receipt)}}</b></div>
           <p class="receipt-note">Goods received and amounts are shown from the saved purchase records. Tax is not configured; this voucher is not a GST tax document.</p>
-          <div class="receipt-payment" *ngIf="paymentsFor(receipt.id).length"><b>Payments recorded</b><p *ngFor="let payment of paymentsFor(receipt.id)">{{payment.recorded_at ? (payment.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata')+' Â· ' : ''}}{{payment.method | titlecase}} Â· {{inr(payment.amount)}}{{payment.reference ? ' Â· Ref '+payment.reference : ''}}</p></div>
+          <div class="receipt-payment" *ngIf="paymentsFor(receipt.id).length"><b>Payments recorded</b><p *ngFor="let payment of paymentsFor(receipt.id)">{{payment.recorded_at ? (payment.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata')+' · ' : ''}}{{payment.method | titlecase}} · {{inr(payment.amount)}}{{payment.reference ? ' · Ref '+payment.reference : ''}}</p></div>
           <footer>Recorded in SwarnaSuraksha</footer>
         </article>
       </div>
@@ -193,7 +193,7 @@ export class PurchasesComponent implements OnInit, OnDestroy {
   get paidMinor(): bigint { return this.payments.reduce((sum, p) => sum + (p.amount.trim() ? parseFixed(p.amount, 2) : 0n), 0n); }
   get totalLabel(): string { try { return this.inr(formatFixed(this.totalMinor, 2)); } catch { return 'Complete item weights and costs'; } }
   get paidLabel(): string { try { return this.inr(formatFixed(this.paidMinor, 2)); } catch { return 'Invalid amount'; } }
-  get balanceLabel(): string { try { return this.inr(formatFixed(this.totalMinor - this.paidMinor, 2)); } catch { return 'â€”'; } }
+  get balanceLabel(): string { try { return this.inr(formatFixed(this.totalMinor - this.paidMinor, 2)); } catch { return '—'; } }
   lineTotal(line: PurchaseDraftLine): string { try { return this.inr(formatFixed(purchaseLineTotal(line.net_weight_g || '0', line.unit_cost_per_gram || '0', line.additional_cost || '0'), 2)); } catch { return 'Enter valid weight and cost'; } }
 
   async post(): Promise<void> {
@@ -295,4 +295,3 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     finally { if (timer) clearTimeout(timer); }
   }
 }
-

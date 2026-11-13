@@ -35,6 +35,7 @@ export class RatesComponent implements OnInit, OnDestroy {
 
   silverRate: number | null = null;
   silverRatePerKilogram: number | null = null;
+  readonly silverBharGrams = 11.6638;
   silverProviderTimestamp: string | null = null;
   silverFetchedAt: string | null = null;
   silverFetching = false;
@@ -134,7 +135,12 @@ export class RatesComponent implements OnInit, OnDestroy {
     this.workspaceSubscription?.unsubscribe();
   }
 
-  async fetchGoldRates(): Promise<void> {
+  /**
+   * forceRefresh = true  -> ignore the 30-minute browser cache and ask the market API again
+   *                          (used by the Refresh / Try again buttons).
+   * forceRefresh = false -> use cached rates when they are fresh (used when the page opens).
+   */
+  async fetchGoldRates(forceRefresh = false): Promise<void> {
     if (!this.workspace || this.fetching) {
       return;
     }
@@ -154,7 +160,7 @@ export class RatesComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     // Silver has independent state/error handling and cannot fail the gold request.
-    void this.fetchSilverRate(client, businessId, requestId);
+    void this.fetchSilverRate(client, businessId, requestId, forceRefresh);
 
     try {
       // Check cache for each purity first
@@ -165,7 +171,9 @@ export class RatesComponent implements OnInit, OnDestroy {
         ? [...this.primaryPurities, ...this.otherPurities]
         : this.primaryPurities;
       for (const purity of requestedPurities) {
-        const cached = this.readCache<GoldRate>(`gold_${purity.toLowerCase()}`);
+        const cached = forceRefresh
+          ? null
+          : this.readCache<GoldRate>(`gold_${purity.toLowerCase()}`);
         if (cached) {
           cachedRates.push(cached);
         } else {
@@ -286,9 +294,10 @@ export class RatesComponent implements OnInit, OnDestroy {
   private async fetchSilverRate(
     client: NonNullable<WorkspaceService['client']>,
     businessId: string,
-    requestId: number
+    requestId: number,
+    forceRefresh = false
   ): Promise<void> {
-    // Check cache first
+    // Check cache first (skipped when the user pressed Refresh)
     interface SilverRate {
       rate: number;
       ratePerKilogram: number;
@@ -296,7 +305,7 @@ export class RatesComponent implements OnInit, OnDestroy {
       fetchedAt: string;
     }
 
-    const cachedSilver = this.readCache<SilverRate>('silver');
+    const cachedSilver = forceRefresh ? null : this.readCache<SilverRate>('silver');
     if (cachedSilver) {
       if (requestId !== this.requestId) {
         return;

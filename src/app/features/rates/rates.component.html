@@ -2,113 +2,57 @@
   <nav class="breadcrumbs" aria-label="Breadcrumb">
     <a routerLink="/dashboard">Overview</a>
     <span class="separator">/</span>
-<span>Gold &amp; silver rates</span>
+    <span>Gold &amp; silver rates</span>
   </nav>
 </header>
 
 <main class="page" [class.rates-embedded]="embedded">
-  <!-- Page heading -->
+  <!-- Heading + refresh -->
   <section class="page-heading">
-    <div>
-      <div class="eyebrow">
-        <span class="eyebrow-line"></span>
-        {{ embedded ? 'TODAY’S MARKET RATES' : 'MARKET WATCH' }}
+    <div class="heading-copy">
+      <h2>Today’s gold and silver rates</h2>
+      <p class="subtitle">Market reference prices in rupees per gram.</p>
+    </div>
+
+    <div class="heading-actions">
+      <div class="status-chip" role="status">
+        <span class="status-indicator" [class.is-busy]="fetching"></span>
+        <span>
+          {{ fetching ? 'Updating rates…' : (latestQuoteTime ? 'Updated ' + (latestQuoteTime | date:'h:mm a':'Asia/Kolkata') : 'GoldAPI') }}
+        </span>
       </div>
 
-      <h1 *ngIf="!embedded">Gold <span>&amp;</span> Silver Rates</h1>
-      <h1 *ngIf="embedded">Gold <span>&amp;</span> Silver Rates</h1>
-
-      <p class="subtitle">
-        Live gold market reference prices for your business.
-      </p>
-    </div>
-
-    <button
-      class="refresh-button"
-      type="button"
-      (click)="fetchGoldRates()"
-      [disabled]="fetching || !workspace"
-    >
-      <svg
-        class="refresh-icon"
-        [class.spinning]="fetching"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M20 7v5h-5M4 17v-5h5"
-          stroke="currentColor"
-          stroke-width="1.7"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M5.5 9A7 7 0 0 1 17 5l3 2M4 17l3 2a7 7 0 0 0 11.5-4"
-          stroke="currentColor"
-          stroke-width="1.7"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-
-      {{ fetching ? 'Fetching rates...' : 'Refresh rates' }}
-    </button>
-  </section>
-
-  <!-- Market status -->
-  <section class="market-status">
-    <span class="status-indicator"></span>
-
-    <div class="status-copy">
-      <strong>
-        {{ fetching ? 'Updating market rates' : 'Gold market reference' }}
-      </strong>
-
-      <span>
-        {{ fetching
-          ? 'Contacting GoldAPI for the latest available quotes.'
-          : 'Prices are quoted in Indian rupees per gram.' }}
-      </span>
-    </div>
-
-    <div class="provider-badge">
-      <span class="provider-dot"></span>
-      GoldAPI
+      <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="fetching || !workspace">
+        <svg class="refresh-icon" [class.spinning]="fetching" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M5.5 9A7 7 0 0 1 17 5l3 2M4 17l3 2a7 7 0 0 0 11.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        {{ fetching ? 'Fetching…' : 'Refresh rates' }}
+      </button>
     </div>
   </section>
 
   <!-- Error -->
   <section class="error-panel" *ngIf="errorMessage" role="alert">
     <div class="error-icon">!</div>
-
     <div class="error-copy">
-      <strong>Unable to load gold rates</strong>
+      <strong>Could not load gold rates</strong>
       <p>{{ errorMessage }}</p>
     </div>
-
-    <button
-      type="button"
-      class="retry-button"
-      (click)="fetchGoldRates()"
-      [disabled]="fetching"
-    >
-      Try again
-    </button>
+    <button type="button" class="retry-button" (click)="fetchGoldRates(true)" [disabled]="fetching">Try again</button>
   </section>
 
   <!-- Loading -->
   <section class="loading-panel" *ngIf="fetching && rates.length === 0">
     <div class="loading-spinner"></div>
-
     <div>
       <strong>Fetching gold prices</strong>
-      <p>Please wait while we retrieve the market quotes.</p>
+      <p>Please wait while we get the latest quotes.</p>
     </div>
   </section>
 
-  <!-- Gold rate cards -->
-  <section class="rates-grid" aria-label="Gold rates">
+  <!-- Rate board: gold plates + silver plate in one grid -->
+  <section class="rate-board" aria-label="Metal rates">
     <article
       class="rate-card"
       *ngFor="let rate of rates; let i = index"
@@ -118,161 +62,95 @@
       <div class="card-top">
         <div class="purity-icon" aria-hidden="true">
           <svg viewBox="0 0 40 40" fill="none">
-            <path
-              d="M20 4 35 13v15L20 36 5 28V13L20 4Z"
-              stroke="currentColor"
-              stroke-width="1.4"
-            />
-            <path
-              d="m5 13 15 9 15-9M20 22v14M12.5 8.5 28 31.5M27.5 8.5 12 31.5"
-              stroke="currentColor"
-              stroke-width="1.1"
-              opacity=".65"
-            />
+            <path d="M20 4 35 13v15L20 36 5 28V13L20 4Z" stroke="currentColor" stroke-width="1.6" />
+            <path d="m5 13 15 9 15-9M20 22v14" stroke="currentColor" stroke-width="1.2" opacity=".65" />
           </svg>
         </div>
-
-        <span
-          class="purity-badge"
-          [class.purity-badge-premium]="rate.purity === '24K'"
-        >
-          {{ rate.purity }}
-        </span>
+        <span class="purity-badge">{{ rate.purity }}</span>
       </div>
 
-      <div class="metal-label">GOLD</div>
+      <h3>{{ rate.purity }} gold</h3>
 
-      <h2>{{ rate.purity }} Gold</h2>
-
-      <div class="price">
-        <span class="currency-symbol">₹</span>
-        {{ formatRate(rate.rate) }}
-      </div>
-
+      <div class="price"><span class="currency-symbol">₹</span>{{ formatRate(rate.rate) }}</div>
       <div class="price-unit">per gram</div>
 
-      <div class="card-divider"></div>
+      <div class="card-footer">
+        <span>Market reference</span>
+        <span>INR / g</span>
+      </div>
+    </article>
+
+    <!-- Silver -->
+    <article class="rate-card rate-card-silver" [style.--card-order]="rates.length">
+      <div class="card-top">
+        <div class="purity-icon silver-symbol" aria-hidden="true">Ag</div>
+        <span class="purity-badge" *ngIf="silverFetching">Updating</span>
+        <span class="purity-badge" *ngIf="!silverFetching && silverRate !== null">Live</span>
+        <span class="purity-badge" *ngIf="!silverFetching && silverRate === null && silverErrorMessage">Unavailable</span>
+      </div>
+
+      <h3>Silver</h3>
+
+      <div class="price" *ngIf="silverRate !== null"><span class="currency-symbol">₹</span>{{ formatRate(silverRate) }}</div>
+      <div class="price price-empty" *ngIf="silverRate === null">
+        {{ silverFetching ? 'Fetching…' : '—' }}
+      </div>
+      <div class="price-unit">per gram</div>
+
+      <dl class="rate-breakdown" *ngIf="silverRate !== null">
+        <div>
+          <dt>10 gram</dt>
+          <dd>₹{{ formatRate(silverRate * 10) }}</dd>
+        </div>
+        <div>
+          <dt>1 bhar <small>({{ silverBharGrams }} g)</small></dt>
+          <dd>₹{{ formatRate(silverRate * silverBharGrams) }}</dd>
+        </div>
+      </dl>
+
+      <p class="silver-error" *ngIf="silverErrorMessage" role="alert">{{ silverErrorMessage }}</p>
 
       <div class="card-footer">
-        <span class="footer-label">Market reference</span>
-        <span class="footer-value">INR / g</span>
+        <span>Market reference</span>
+        <span *ngIf="silverFetchedAt">{{ silverFetchedAt | date:'h:mm a':'Asia/Kolkata' }}</span>
+        <span *ngIf="!silverFetchedAt">INR / g</span>
       </div>
     </article>
   </section>
 
   <button
     *ngIf="!showOtherGoldRates"
-    class="text-btn"
+    class="text-btn more-rates"
     type="button"
     (click)="loadOtherGoldRates()"
     [disabled]="fetching || !workspace"
   >
-    View Other Gold Rates
+    View other gold rates
   </button>
 
   <!-- Empty state -->
-  <section
-    class="empty-panel"
-    *ngIf="!fetching && rates.length === 0 && !errorMessage"
-  >
+  <section class="empty-panel" *ngIf="!fetching && rates.length === 0 && !errorMessage">
     <div class="empty-icon">₹</div>
     <h2>Your gold rates will appear here</h2>
-    <p>
-      Fetch the latest available 24K gold and silver market quotes.
-    </p>
-
-    <button
-      class="refresh-button"
-      type="button"
-      (click)="fetchGoldRates()"
-      [disabled]="!workspace"
-    >
-      Fetch live gold rates
+    <p>Fetch the latest 24K gold and silver market quotes.</p>
+    <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="!workspace">
+      Fetch live rates
     </button>
   </section>
 
-  <!-- Quote information -->
+  <!-- Reference note -->
   <section class="quote-info" *ngIf="rates.length > 0">
     <div class="quote-info-icon">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle
-          cx="12"
-          cy="12"
-          r="9"
-          stroke="currentColor"
-          stroke-width="1.5"
-        />
-        <path
-          d="M12 11v5M12 8h.01"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-        />
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+        <path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
       </svg>
     </div>
-
-    <div class="quote-info-copy">
-      <strong>Market reference prices</strong>
-
-      <p>
-        These are provider quotes, not guaranteed shop buying or selling
-        prices. Fetching rates does not change your business prices,
-        previous bills, or stored records.
-      </p>
-
-      <div class="quote-timestamp" *ngIf="latestQuoteTime">
-        <span class="timestamp-dot"></span>
-        Last retrieved
-        {{ latestQuoteTime | date:'d MMM y, h:mm:ss a':'Asia/Kolkata' }}
-      </div>
-    </div>
+    <p>
+      These are provider quotes, not your shop’s buying or selling prices. Refreshing does not change your bills or records.
+      <span class="quote-time" *ngIf="latestQuoteTime">
+        Last retrieved {{ latestQuoteTime | date:'d MMM y, h:mm:ss a':'Asia/Kolkata' }}.
+      </span>
+    </p>
   </section>
-
-  <!-- Silver rates: independent from gold errors and loading state -->
-  <section class="silver-notice" aria-label="Live silver rates">
-    <div class="silver-symbol" aria-hidden="true">Ag</div>
-
-    <div class="silver-content">
-      <h2>Silver rates</h2>
-
-      <p *ngIf="silverFetching && silverRate === null">
-        Fetching the latest available silver quote...
-      </p>
-
-      <p class="silver-error" *ngIf="silverErrorMessage" role="alert">
-        {{ silverErrorMessage }}
-      </p>
-
-      <p *ngIf="!silverFetching && silverRate === null && !silverErrorMessage">
-        Silver rate will appear here after the first successful refresh.
-      </p>
-
-      <div
-        class="silver-prices"
-        *ngIf="silverRate !== null && silverRatePerKilogram !== null"
-      >
-        <div class="silver-price-item">
-          <span>Per gram</span>
-          <strong>₹{{ formatRate(silverRate) }}</strong>
-        </div>
-      </div>
-
-      <div class="quote-timestamp" *ngIf="silverFetchedAt">
-        <span class="timestamp-dot"></span>
-        Last retrieved
-        {{ silverFetchedAt | date:'d MMM y, h:mm:ss a':'Asia/Kolkata' }}
-      </div>
-    </div>
-
-    <span class="coming-badge" *ngIf="silverFetching">Updating</span>
-    <span class="coming-badge" *ngIf="!silverFetching && silverRate !== null">Live quote</span>
-    <span class="coming-badge" *ngIf="!silverFetching && silverRate === null && silverErrorMessage">Unavailable</span>
-  </section>
-
-  <footer class="page-footer">
-    <span class="footer-shield">◆</span>
-    Market reference only
-    <span class="footer-separator">·</span>
-    Confirm your shop's buying and selling prices separately.
-  </footer>
 </main>

@@ -20,13 +20,13 @@ interface PendingPayment { key: string; amount: string; method: Method; referenc
       <div class="payment-editor" *ngIf="editing || pending">
         <p *ngIf="!pending">Remaining: <b>{{inr(remainingMinor)}}</b></p>
         <form *ngIf="!pending" (ngSubmit)="save()">
-          <label>Amount (â‚¹)<input [(ngModel)]="amount" name="ledgerPaymentAmount" inputmode="decimal" required></label>
+          <label>Amount (₹)<input [(ngModel)]="amount" name="ledgerPaymentAmount" inputmode="decimal" required></label>
           <label>Method<select [(ngModel)]="method" name="ledgerPaymentMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label>
           <label>Reference (optional)<input [(ngModel)]="reference" name="ledgerPaymentReference" maxlength="120"></label>
           <p class="form-error" *ngIf="errorMessage" role="alert">{{errorMessage}}</p>
-          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !(network.online$ | async)">{{saving?'Recordingâ€¦':!(network.online$ | async)?'Offline â€” disabled':'Save payment'}}</button><button class="text-btn" type="button" (click)="editing=false" [disabled]="saving">Cancel</button></div>
+          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !(network.online$ | async)">{{saving?'Recording…':!(network.online$ | async)?'Offline — disabled':'Save payment'}}</button><button class="text-btn" type="button" (click)="editing=false" [disabled]="saving">Cancel</button></div>
         </form>
-        <div *ngIf="pending"><p class="payment-pending">Payment result is uncertain. Retry the exact same amount and method safely.</p><p class="form-error" *ngIf="errorMessage" role="alert">{{errorMessage}}</p><button class="primary-btn" type="button" (click)="save()" [disabled]="saving || !(network.online$ | async)">{{saving?'Checkingâ€¦':'Retry safely'}}</button></div>
+        <div *ngIf="pending"><p class="payment-pending">Payment result is uncertain. Retry the exact same amount and method safely.</p><p class="form-error" *ngIf="errorMessage" role="alert">{{errorMessage}}</p><button class="primary-btn" type="button" (click)="save()" [disabled]="saving || !(network.online$ | async)">{{saving?'Checking…':'Retry safely'}}</button></div>
       </div>
     </div>
   `
@@ -74,5 +74,3 @@ export class LedgerPaymentComponent {
   }
   private async withTimeout<T>(request:PromiseLike<T>,abort:()=>void):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([Promise.resolve(request),new Promise<T>((_,reject)=>{timer=setTimeout(()=>{abort();reject(new Error('Payment request timed out after 20 seconds. Retry with the same key.'));},20000);})]);}finally{if(timer)clearTimeout(timer);}}
 }
-
-
