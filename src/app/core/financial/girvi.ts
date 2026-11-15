@@ -18,6 +18,13 @@ export function completedMonthlyPeriods(startDate: string, asOfDate: string): nu
   return Math.max(0, months);
 }
 
+export function girviCollateralValue(weightGrams: string, ratePerGram: string): string {
+  const weight = parseFixed(weightGrams, 4);
+  const rate = parseFixed(ratePerGram, 4);
+  if (weight <= 0n || rate <= 0n) throw new RangeError('Girvi item weight and rate must be positive.');
+  return formatFixed((weight * rate + 500000n) / 1000000n, 2);
+}
+
 export function girviBalancesAt(
   principal: string,
   accruedInterest: string,
@@ -29,8 +36,8 @@ export function girviBalancesAt(
     throw new RangeError('Accrued months must not exceed completed months.');
   }
   const rate = Number(monthlyInterestPercent);
-  if (!Number.isFinite(rate) || rate < 2 || rate > 6) {
-    throw new RangeError('Girvi interest must be between 2% and 6% per month.');
+  if (!Number.isFinite(rate) || rate < 2 || rate > 10) {
+    throw new RangeError('Girvi interest must be between 2% and 10% per month.');
   }
   let principalMinor = parseFixed(principal, 2);
   let interestMinor = parseFixed(accruedInterest, 2);

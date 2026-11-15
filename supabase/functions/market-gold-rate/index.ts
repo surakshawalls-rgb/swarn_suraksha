@@ -297,7 +297,8 @@ Deno.serve(async (req: Request) => {
 
       return json({
         provider: 'GoldAPI',
-        market: 'India',
+        market: 'international_spot',
+        rateType: 'international_spot',
         metal: 'silver',
         symbol: 'XAG/INR',
         currency: 'INR',
@@ -353,7 +354,8 @@ Deno.serve(async (req: Request) => {
 
     return json({
       provider: 'GoldAPI',
-      market: 'India',
+      market: 'international_spot',
+      rateType: 'international_spot',
       metal: 'gold',
       purity,
       symbol: `XAU/INR-${purity}`,

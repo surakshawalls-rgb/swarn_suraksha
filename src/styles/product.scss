@@ -131,6 +131,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .config-banner > div { flex: 1; }
 .config-banner b { font-size: 10px; }
 .config-banner p { margin: 5px 0 0; font-size: 9px; line-height: 1.6; }
+.customer-outstanding-payment { display: grid; gap: 9px; margin-top: 12px; padding: 12px; border: 1px solid #e6deca; border-radius: 8px; background: #fffdf8; }
+.customer-outstanding-payment > b { color: #3e4e43; }
+.customer-payment-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.customer-payment-fields label { display: grid; gap: 6px; color: #526057; font-size: 10px; font-weight: 600; }
+.customer-payment-fields input, .customer-payment-fields select { width: 100%; min-height: 40px; border: 1px solid #dfe5df; border-radius: 7px; padding: 10px; background: #fff; color: #29362f; font: 11px 'DM Sans', sans-serif; }
+.outstanding-ledger { display: grid; gap: 9px; margin-top: 12px; padding: 12px; border: 1px solid #e3e9e2; border-radius: 8px; background: #fff; }
+.outstanding-ledger .table-wrap { max-height: 320px; overflow: auto; }
+.outstanding-ledger table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.outstanding-ledger th, .outstanding-ledger td { padding: 8px; border-bottom: 1px solid #edf0ec; text-align: left; vertical-align: top; }
+.outstanding-ledger th { color: #526057; font-weight: 700; white-space: nowrap; }
+.outstanding-ledger td small { display: block; color: #7d897f; font-size: 9px; }
+.outstanding-ledger td:last-child b { color: #33493a; white-space: nowrap; }
+.ledger-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #758178; font-size: 10px; }
+.outstanding-exchange-form { display: grid; gap: 10px; }
+.outstanding-exchange-form .exchange-line { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.outstanding-exchange-form > p { margin: 0; color: #4a5b4f; font-size: 11px; }
 .rate-editor { margin-bottom: 14px; }
 .rate-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 15px; }
 .rate-form label { display: grid; align-content: start; gap: 6px; color: #526057; font-size: 10px; font-weight: 600; }
@@ -148,9 +164,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .purchases-page .purchase-form { grid-template-columns: 1fr; }
 .purchase-form > label { max-width: 550px; }
 .purchase-form select { width: 100%; min-height: 40px; border: 1px solid #dfe5df; border-radius: 7px; padding: 10px; background: white; color: #29362f; font: 11px 'DM Sans', sans-serif; }
+.customer-search-field { position: relative; z-index: 4; max-width: 550px; }
+.customer-search-results { position: absolute; top: calc(100% + 3px); left: 0; right: 0; display: grid; max-height: 240px; overflow-y: auto; border: 1px solid #dfe5df; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px rgb(34 49 38 / 12%); }
+.customer-search-results button { display: grid; gap: 3px; padding: 9px 11px; border: 0; border-bottom: 1px solid #edf0ec; background: transparent; color: #35453a; text-align: left; cursor: pointer; }
+.customer-search-results button:hover, .customer-search-results button:focus-visible { background: #f3f7f2; outline: none; }
+.customer-search-results button small, .customer-search-empty { color: #7d897f; font-size: 9px; font-weight: 400; }
+.customer-search-empty { padding: 11px; }
+.selected-customer { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 550px; padding: 10px 12px; border: 1px solid #dce8dc; border-radius: 7px; background: #f4f8f3; color: #68756c; font-size: 10px; }
+.selected-customer b { margin-left: 5px; color: #32473a; }
+.rate-source-note { display: block; margin-top: 4px; color: #87938a; font-size: 8px; line-height: 1.4; }
 .purchase-lines, .purchase-payments { display: grid; gap: 12px; }
 .purchase-line { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 14px; border: 1px solid #e8ece7; border-radius: 8px; background: #fbfcfa; }
-.purchase-line .line-heading, .purchase-line .line-total { grid-column: 1 / -1; }
+.purchase-line .line-heading, .purchase-line .line-total, .purchase-line .rate-hint { grid-column: 1 / -1; }
+.line-charge { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; padding: 7px 10px; border: 1px solid #e5eae4; border-radius: 7px; background: #f5f8f4; color: #647168; font-size: 9px; }
+.line-charge span, .line-charge b { display: block; }
+.line-charge b { margin-top: 3px; color: #8a958c; font-size: 8px; font-weight: 500; }
+.line-charge strong { color: #35493b; font-size: 11px; white-space: nowrap; }
+.rate-hint { margin: 0; color: #8a6540; font-size: 9px; line-height: 1.4; }
+.add-item-btn { justify-self: start; min-height: 32px; padding: 6px 10px; border: 1px dashed #cbd6cc; border-radius: 6px; font-size: 10px; }
+.add-item-btn .btn-icon { width: 15px; height: 15px; }
 .line-heading { display: flex; align-items: center; justify-content: space-between; color: #3e4e43; font-size: 10px; }
 .line-total { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e8ece7; padding-top: 10px; color: #657269; font-size: 10px; }
 .line-total b { color: #293a30; font-size: 13px; }
@@ -159,6 +191,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .payment-line input, .payment-line select { width: 100%; min-height: 40px; border: 1px solid #dfe5df; border-radius: 7px; padding: 10px; background: #fff; color: #29362f; font: 11px 'DM Sans', sans-serif; }
 .purchase-summary { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; justify-self: end; min-width: min(100%, 340px); padding: 14px; border-radius: 8px; background: #f4f7f3; color: #68756c; font-size: 10px; }
 .purchase-summary b { color: #2f4135; text-align: right; }
+.exchange-toggle { display: flex; align-items: center; gap: 10px; min-height: 48px; color: #33463a; font-size: 14px; font-weight: 700; }
+.exchange-toggle input { width: 20px; height: 20px; accent-color: #41654f; }
+.exchange-editor { display: grid; gap: 14px; padding: 18px; border: 1px solid #e6deca; border-radius: 12px; background: #fdfbf6; }
+.exchange-editor > .panel-head { align-items: center; }
+.exchange-editor h3 { margin: 0; color: #293a2f; font: 700 18px 'Playfair Display', serif; }
+.exchange-editor .panel-head p { margin: 5px 0 0; color: #68756c; font-size: 12px; }
+.exchange-line { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid #e8ece7; border-radius: 10px; background: white; }
+.exchange-line label, .excess-choice label { display: grid; gap: 6px; min-width: 0; color: #526057; font-size: 12px; font-weight: 600; }
+.exchange-line input, .exchange-line select, .excess-choice select { width: 100%; min-width: 0; min-height: 42px; border: 1px solid #dfe5df; border-radius: 7px; padding: 9px; background: white; color: #29362f; font-size: 14px; }
+.exchange-line .line-heading, .exchange-line .line-total { grid-column: 1 / -1; }
+.exchange-line .line-total { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid #edf0ec; color: #53665a; font-size: 13px; }
+.excess-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 14px; border: 1px solid #e6d3ac; border-radius: 10px; background: #fffaf0; color: #6b5429; }
+.excess-choice b { grid-column: 1 / -1; font-size: 14px; }
 .pending-purchase { margin: 14px 0; }
 .pending-purchase p { color: #7a6451; font-size: 10px; line-height: 1.6; }
 .inventory-panel { margin-bottom: 14px; }
@@ -168,6 +213,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .inventory-empty { min-height: 110px; }
 .purchase-history td { vertical-align: top; }
 .purchase-history td small { display: block; margin-top: 4px; color: #87928a; font-size: 8px; }
+.purchase-history .bill-actions { min-width: 250px; white-space: nowrap; }
+.purchase-history .bill-actions .text-btn { margin: 0 4px 4px 0; }
+.bill-details { display: grid; gap: 16px; padding: 14px; border: 1px solid #e6ece5; border-radius: 9px; background: #f8faf7; }
+.bill-details-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.bill-details h3 { margin: 0 0 9px; color: #34473a; font-size: 13px; }
+.bill-details h3 span { color: #7d897f; font-size: 10px; font-weight: 500; }
+.bill-details p { margin: 6px 0; color: #5d695f; font-size: 11px; line-height: 1.55; }
+.bill-details p small, .bill-history article small { display: block; color: #7e897f; font-size: 10px; }
+.bill-history { padding-top: 12px; border-top: 1px solid #e2e8e1; }
+.bill-history article { margin-top: 8px; padding: 9px 11px; border: 1px solid #e7ece6; border-radius: 7px; background: white; color: #526057; font-size: 10px; line-height: 1.5; }
+.bill-history article > b { color: #33473a; }
 .sales-page .sale-rate-warning { margin: 0; color: #8a7044; font-size: 9px; line-height: 1.5; }
 .cashbook-filter { display: flex; align-items: end; gap: 11px; margin-bottom: 13px; padding: 13px; }
 .cashbook-filter label { display: grid; gap: 6px; color: #526057; font-size: 9px; font-weight: 600; }
@@ -216,8 +272,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .customer-form .form-notes, .customer-form .form-error, .customer-form .duplicate-warning, .customer-form .form-actions { grid-column: auto; }
   .rate-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .purchase-line { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .exchange-editor { padding: 12px; }
+  .exchange-editor > .panel-head { align-items: flex-start; }
+  .exchange-line { grid-template-columns: 1fr; padding: 12px; }
+  .exchange-line .line-heading, .exchange-line .line-total { grid-column: auto; }
+  .bill-details-columns { grid-template-columns: 1fr; }
+  .purchase-history .bill-actions { min-width: 0; white-space: normal; }
+  .excess-choice { grid-template-columns: 1fr; }
+  .excess-choice b { grid-column: auto; }
   .payment-line { grid-template-columns: 1fr 1fr; }
   .payment-line label:nth-child(3) { grid-column: 1 / -1; }
+  .customer-payment-fields { grid-template-columns: 1fr; }
   .cashbook-filter { flex-wrap: wrap; }
   .cashbook-summary { grid-template-columns: 1fr; }
   .cashbook-summary > p { grid-column: auto; }
@@ -228,6 +293,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .setup-content .onboarding-card { padding: 20px; }
   .setup-content .onboarding-card .field-row { grid-template-columns: 1fr; }
   .rate-form { grid-template-columns: 1fr; }
+  .purchase-line { grid-template-columns: 1fr; }
   .list-footer { align-items: flex-start; flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {

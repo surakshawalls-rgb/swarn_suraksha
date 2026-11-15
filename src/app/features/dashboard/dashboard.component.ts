@@ -54,7 +54,7 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
           <div>
             <b>{{ girviSetupMissing ? 'Girvi is not set up in the database yet' : 'Some activity could not load' }}</b>
             <p>{{ activityError }}</p>
-            <p *ngIf="girviSetupMissing">Run migration <code>020_girvi_pledges.sql</code> in the Supabase SQL Editor to create the Girvi tables.</p>
+            <p *ngIf="girviSetupMissing">Run the prerequisite migrations in order through <code>024_customer_outstanding_exchange.sql</code>, then <code>025_girvi_multi_item_agreements.sql</code>, in the Supabase SQL Editor.</p>
           </div>
         </div>
 

@@ -11,7 +11,7 @@
   <section class="page-heading">
     <div class="heading-copy">
       <h2>Today’s gold and silver rates</h2>
-      <p class="subtitle">Market reference prices in rupees per gram.</p>
+      <p class="subtitle">GoldAPI international spot quotes converted to rupees per gram. These are not Indian domestic bullion rates.</p>
     </div>
 
     <div class="heading-actions">
@@ -147,7 +147,7 @@
       </svg>
     </div>
     <p>
-      These are provider quotes, not your shop’s buying or selling prices. Refreshing does not change your bills or records.
+      GoldAPI supplies international spot quotes converted to INR. Import duties, GST and Indian domestic premiums are not added; these rates are not domestic bullion prices. They are separate from shop buying and selling rates. Refreshing does not change your bills or records.
       <span class="quote-time" *ngIf="latestQuoteTime">
         Last retrieved {{ latestQuoteTime | date:'d MMM y, h:mm:ss a':'Asia/Kolkata' }}.
       </span>

@@ -187,30 +187,30 @@ begin
     raise exception 'Report range must be between one and 366 days' using errcode='22023';
   end if;
   return query
-  with days as (select g.day_ts::date day from generate_series(p_from::timestamp,p_through::timestamp,interval '1 day') g(day_ts)),
+  with days as (select g.day_ts::date as day from generate_series(p_from::timestamp,p_through::timestamp,interval '1 day') as g(day_ts)),
   sales as (
-    select (s.created_at at time zone 'Asia/Kolkata')::date day,sum(s.subtotal)::numeric total,count(*)::bigint n from public.ss_sales s
+    select (s.created_at at time zone 'Asia/Kolkata')::date as day,sum(s.subtotal)::numeric total,count(*)::bigint n from public.ss_sales s
     where s.business_id=p_business_id and s.created_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and s.created_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), sale_returns as (
-    select (r.recorded_at at time zone 'Asia/Kolkata')::date day,sum(r.original_line_amount)::numeric total,count(*)::bigint n from public.ss_sale_returns r
+    select (r.recorded_at at time zone 'Asia/Kolkata')::date as day,sum(r.original_line_amount)::numeric total,count(*)::bigint n from public.ss_sale_returns r
     where r.business_id=p_business_id and r.recorded_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and r.recorded_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), purchases as (
-    select (p.created_at at time zone 'Asia/Kolkata')::date day,sum(p.subtotal)::numeric total,count(*)::bigint n from public.ss_purchases p
+    select (p.created_at at time zone 'Asia/Kolkata')::date as day,sum(p.subtotal)::numeric total,count(*)::bigint n from public.ss_purchases p
     where p.business_id=p_business_id and p.created_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and p.created_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), expenses as (
-    select (x.occurred_at at time zone 'Asia/Kolkata')::date day,sum(x.amount)::numeric total,count(*)::bigint n from public.ss_expenses x
+    select (x.occurred_at at time zone 'Asia/Kolkata')::date as day,sum(x.amount)::numeric total,count(*)::bigint n from public.ss_expenses x
     where x.business_id=p_business_id and x.occurred_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and x.occurred_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), sale_cash as (
-    select (e.recorded_at at time zone 'Asia/Kolkata')::date day,sum(e.amount)::numeric total from public.ss_sale_cashbook_entries e
+    select (e.recorded_at at time zone 'Asia/Kolkata')::date as day,sum(e.amount)::numeric total from public.ss_sale_cashbook_entries e
     where e.business_id=p_business_id and e.recorded_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and e.recorded_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), refund_cash as (
-    select (e.recorded_at at time zone 'Asia/Kolkata')::date day,sum(e.amount)::numeric total from public.ss_sale_return_cashbook_entries e
+    select (e.recorded_at at time zone 'Asia/Kolkata')::date as day,sum(e.amount)::numeric total from public.ss_sale_return_cashbook_entries e
     where e.business_id=p_business_id and e.recorded_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and e.recorded_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), purchase_cash as (
-    select (e.recorded_at at time zone 'Asia/Kolkata')::date day,sum(e.amount)::numeric total from public.ss_cashbook_entries e
+    select (e.recorded_at at time zone 'Asia/Kolkata')::date as day,sum(e.amount)::numeric total from public.ss_cashbook_entries e
     where e.business_id=p_business_id and e.direction='out' and e.recorded_at >= (p_from::timestamp at time zone 'Asia/Kolkata') and e.recorded_at < ((p_through+1)::timestamp at time zone 'Asia/Kolkata') group by 1
   ), stock as (
-    select (m.recorded_at at time zone 'Asia/Kolkata')::date day,m.metal,sum(m.weight_delta_g)::numeric change from (
+    select (m.recorded_at at time zone 'Asia/Kolkata')::date as day,m.metal,sum(m.weight_delta_g)::numeric change from (
       select business_id,recorded_at,metal,weight_delta_g from public.ss_inventory_movements
       union all select business_id,recorded_at,metal,weight_delta_g from public.ss_sale_inventory_movements
       union all select business_id,recorded_at,metal,weight_delta_g from public.ss_sale_return_inventory_movements

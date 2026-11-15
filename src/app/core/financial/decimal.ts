@@ -87,6 +87,28 @@ export function purchaseLineTotal(
   return quotient + (remainder * 2n >= divisor ? 1n : 0n);
 }
 
+/** Calculates a percentage making charge from unrounded weight and rate, rounded to paise. */
+export function percentageCharge(
+  weightGrams: string,
+  ratePerGram: string,
+  percent: string
+): string {
+  const weight = parseFixed(weightGrams, 4);
+  const rate = parseFixed(ratePerGram, 4);
+  const percentage = parseFixed(percent, 2);
+
+  if (weight < 0n || rate < 0n || percentage < 0n || percentage > 10_000n) {
+    throw new RangeError('Weight, rate, and percentage must be non-negative and percentage cannot exceed 100%.');
+  }
+
+  const numerator = weight * rate * percentage;
+  const divisor = 10_000_000_000n;
+  const quotient = numerator / divisor;
+  const remainder = numerator % divisor;
+
+  return formatFixed(quotient + (remainder * 2n >= divisor ? 1n : 0n), 2);
+}
+
 /** Illustrative compound growth using integer minor currency units and basis points. */
 export function compoundTotalMinor(
   principalMinor: bigint,

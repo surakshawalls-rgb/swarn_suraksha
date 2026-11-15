@@ -56,6 +56,18 @@ export interface Database {
         Row: { id: string; business_id: string; purchase_id: string; method: 'cash' | 'upi' | 'bank_transfer' | 'card'; amount: string; reference: string | null; received_by: string; recorded_at: string; idempotency_key: string };
         Insert: never; Update: never; Relationships: [];
       };
+      ss_girvi: {
+        Row: { id:string; business_id:string; customer_id:string; girvi_number:number; idempotency_key:string; request_payload:unknown; metal:'gold'|'silver'|'mixed'; purity:string|null; weight_g:string; rate_per_gram:string; estimated_market_value:string; principal_amount:string; principal_balance:string; interest_balance:string; monthly_interest_percent:string; girvi_date:string; maturity_date:string; customer_name_snapshot:string|null; customer_phone_snapshot:string|null; customer_address_snapshot:string|null; last_accrued_months:number; status:'active'|'closed'; closed_at:string|null; jewellery_returned:boolean; returned_at:string|null; notes:string|null; created_by:string; created_at:string; updated_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_girvi_payments: {
+        Row: { id:string; business_id:string; girvi_id:string; idempotency_key:string; amount:string; payment_method:'cash'|'upi'|'bank_transfer'|'card'; interest_paid:string; principal_paid:string; payment_date:string; received_by:string; created_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_girvi_audit_events: {
+        Row: { id:string; business_id:string; girvi_id:string; actor_user_id:string; event_type:'girvi.created'|'girvi.payment'|'girvi.closed'|'girvi.agreement_print_requested'; payment_id:string|null; safe_metadata:unknown; recorded_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
       ss_inventory_movements: {
         Row: { id: string; business_id: string; source_type: 'purchase'; source_id: string; source_line_id: string; metal: 'gold' | 'silver' | 'other'; purity: string | null; weight_delta_g: string; actor_user_id: string; recorded_at: string };
         Insert: never; Update: never; Relationships: [];
@@ -73,7 +85,27 @@ export interface Database {
         Insert: never; Update: never; Relationships: [];
       };
       ss_sale_lines: {
-        Row: { id: string; business_id: string; sale_id: string; line_number: number; item_description: string; metal: 'gold' | 'silver' | 'other'; purity: string | null; gross_weight_g: string; net_weight_g: string; rate_snapshot_id: string; unit_rate_per_gram: string; making_charge: string; line_total: string; created_at: string };
+        Row: { id: string; business_id: string; sale_id: string; line_number: number; item_description: string; metal: 'gold' | 'silver' | 'other'; purity: string | null; gross_weight_g: string; net_weight_g: string; rate_snapshot_id: string; unit_rate_per_gram: string; making_charge: string; making_charge_percent: string | null; line_total: string; created_at: string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_sale_exchanges: {
+        Row: { id:string; business_id:string; sale_id:string; customer_id:string; exchange_number:number; metal:'gold'|'silver'; purity:string; description:string; gross_weight_g:string; non_metal_deduction_g:string; net_weight_g:string; quality_deduction_percent:string; purity_factor:string; accepted_weight_g:string; rate_snapshot_id:string; rate_source:'reference'|'shop_buy'|'manual'; reference_rate_per_gram:string; applied_rate_per_gram:string; valuation_mode:'selected_purity'|'24k_equivalent'; calculated_exchange_value:string; exchange_value:string; manual_override_reason:string|null; received_at:string; created_by:string; created_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_customer_outstanding_exchanges: {
+        Row: { id:string; business_id:string; customer_id:string; posting_id:string; customer_adjustment_id:string; item_number:number; metal:'gold'|'silver'; purity:string; description:string; net_weight_g:string; quality_deduction_percent:string; purity_factor:string; accepted_weight_g:string; rate_snapshot_id:string; applied_rate_per_gram:string; exchange_value:string; received_at:string; created_by:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_sale_exchange_postings: {
+        Row: { id:string; business_id:string; sale_id:string; idempotency_key:string; request_payload:unknown; exchange_total:string; previous_outstanding:string; customer_advance_credit:string; total_payable:string; excess_action:'none'|'refund'|'advance_credit'; created_by:string; created_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_girvi_items: {
+        Row: { id:string; business_id:string; girvi_id:string; item_number:number; description:string; condition_notes:string|null; metal:'gold'|'silver'; purity:string; purity_factor:string; weight_g:string; rate_per_gram:string; estimated_market_value:string; created_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      ss_girvi_cashbook_entries: {
+        Row: { id:string; business_id:string; girvi_id:string; girvi_payment_id:string|null; entry_type:'loan_disbursement'|'payment'; direction:'in'|'out'; amount:string; method:'cash'|'upi'|'bank_transfer'|'card'|'unknown'; actor_user_id:string; recorded_at:string };
         Insert: never; Update: never; Relationships: [];
       };
       ss_sale_payments: {
@@ -175,8 +207,28 @@ export interface Database {
         Args: { p_business_id:string; p_customer_id:string; p_from?:string|null; p_through?:string|null; p_offset?:number; p_limit?:number };
         Returns: Json;
       };
+      ss_post_sale_with_exchange: {
+        Args: { p_business_id:string; p_customer_id:string|null; p_idempotency_key:string; p_lines:Json; p_exchanges:Json; p_payments:Json; p_excess_action?:string; p_excess_refund_method?:string|null };
+        Returns: string;
+      };
+      ss_record_customer_outstanding_payment: {
+        Args: { p_business_id:string; p_customer_id:string; p_idempotency_key:string; p_amount:number|string; p_method:string; p_reference?:string|null };
+        Returns: string;
+      };
+      ss_record_customer_outstanding_exchange: {
+        Args: { p_business_id:string; p_customer_id:string; p_idempotency_key:string; p_items:Json };
+        Returns: string;
+      };
       ss_girvi_create: {
         Args: { p_business_id:string; p_customer_id:string; p_idempotency_key:string; p_metal:string; p_purity:string|null; p_weight_g:number|string; p_rate_per_gram:number|string; p_principal:number|string; p_monthly_interest_percent:number|string; p_girvi_date:string; p_notes?:string|null };
+        Returns: string;
+      };
+      ss_girvi_create_multi: {
+        Args: { p_business_id:string; p_customer_id:string; p_idempotency_key:string; p_items:Json; p_principal:number|string; p_monthly_interest_percent:number|string; p_girvi_date:string; p_maturity_date:string; p_disbursement_method:string; p_notes?:string|null };
+        Returns: string;
+      };
+      ss_audit_girvi_agreement_print: {
+        Args: { p_business_id:string; p_girvi_id:string };
         Returns: string;
       };
       ss_girvi_record_payment: {

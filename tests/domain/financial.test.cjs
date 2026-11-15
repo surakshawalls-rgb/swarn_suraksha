@@ -1,9 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { compoundTotalMinor, formatFixed, formatInr, parseFixed, purchaseLineTotal } = require('../../.test-build/app/core/financial/decimal.js');
+const { compoundTotalMinor, formatFixed, formatInr, parseFixed, percentageCharge, purchaseLineTotal } = require('../../.test-build/app/core/financial/decimal.js');
 const { allocateSaleReturn } = require('../../.test-build/app/core/financial/sales-return.js');
+const { calculateExchangeValue } = require('../../.test-build/app/core/financial/exchange.js');
 const { validateCustomerLedgerPage, validateCustomerStatementPage } = require('../../.test-build/app/core/financial/customer-statement.js');
-const { allocateGirviPayment, completedMonthlyPeriods, girviBalancesAt } = require('../../.test-build/app/core/financial/girvi.js');
+const { allocateGirviPayment, completedMonthlyPeriods, girviBalancesAt, girviCollateralValue } = require('../../.test-build/app/core/financial/girvi.js');
 
 test('fixed decimal parsing and formatting preserve currency precision', () => {
   assert.equal(parseFixed('30000.00', 2), 3000000n);
@@ -26,6 +27,15 @@ test('purchase lines multiply grams and unit price exactly, then round once to p
   assert.throws(() => purchaseLineTotal('1', '-1', '0'), /costs cannot be negative/);
 });
 
+test('gold making charge is the selected percentage of unrounded metal value', () => {
+  assert.equal(percentageCharge('10.0000', '7500.0000', '5.00'), '3750.00');
+  assert.equal(percentageCharge('10.0000', '7500.0000', '10.00'), '7500.00');
+  assert.equal(percentageCharge('10.0000', '7500.0000', '20.00'), '15000.00');
+  assert.equal(percentageCharge('1.0000', '100.0000', '10.00'), '10.00');
+  assert.equal(percentageCharge('0.0001', '50.0000', '10.00'), '0.00');
+  assert.throws(() => percentageCharge('1.0000', '100.0000', '100.01'), /cannot exceed 100%/);
+});
+
 test('illustrative 3 percent monthly compound schedule uses integer arithmetic', () => {
   const principal = parseFixed('30000.00', 2);
   const totals = [1, 2, 3, 4].map(month => formatFixed(compoundTotalMinor(principal, 300, month), 2));
@@ -45,6 +55,10 @@ test('Girvi compounding counts completed monthly anniversaries with month-end cl
   assert.deepEqual(girviBalancesAt('50000.00', '0.00', 3, 0, 3), {
     principal: '50000.00', interest: '4636.35', outstanding: '54636.35'
   });
+  assert.deepEqual(girviBalancesAt('1000.00', '0.00', 10, 0, 1), {
+    principal: '1000.00', interest: '100.00', outstanding: '1100.00'
+  });
+  assert.throws(() => girviBalancesAt('1000.00', '0.00', 10.01, 0, 1), /between 2% and 10%/);
 });
 
 test('Girvi payments pay compounded interest before reducing principal', () => {
@@ -54,9 +68,31 @@ test('Girvi payments pay compounded interest before reducing principal', () => {
   assert.throws(() => allocateGirviPayment('50000.00', '0.00', '52000.00', 3, 0, 1), /exceeds the current Girvi outstanding/);
 });
 
+test('Girvi collateral values round each item to paise using its saved purity rate', () => {
+  assert.equal(girviCollateralValue('100.0000', '147.5141'), '14751.41');
+  assert.equal(girviCollateralValue('10.0000', '11762.2767'), '117622.77');
+  assert.equal(girviCollateralValue('0.0001', '50.0000'), '0.01');
+  assert.throws(() => girviCollateralValue('0', '100'), /must be positive/);
+});
+
 test('sales returns reduce unpaid invoice balance before creating a refund', () => {
   const result = allocateSaleReturn({ subtotalMinor: 10000n, paidMinor: 4000n, priorBalanceReductionsMinor: 0n, priorCashRefundsMinor: 0n, lineAmountMinor: 8000n });
   assert.deepEqual(result, { balanceReductionMinor: 6000n, cashRefundMinor: 2000n });
+});
+
+test('exchange valuation applies purity and quality deductions exactly once', () => {
+  assert.deepEqual(calculateExchangeValue('10.0000', '0.0000', '20.00', '1.0000', '14000.0000'), {
+    netWeight: '10.0000', acceptedWeight: '8.0000', exchangeValue: '112000.00'
+  });
+  assert.deepEqual(calculateExchangeValue('10.0000', '1.2500', '50.00', '0.916667', '14000.0000'), {
+    netWeight: '8.7500', acceptedWeight: '4.0104', exchangeValue: '56145.60'
+  });
+});
+
+test('exchange valuation rejects invalid deductions, quality, and purity factors', () => {
+  assert.throws(() => calculateExchangeValue('1.0000', '1.0000', '0', '1', '100'), /must exceed/);
+  assert.throws(() => calculateExchangeValue('1.0000', '0', '50.01', '1', '100'), /between 0% and 50%/);
+  assert.throws(() => calculateExchangeValue('1.0000', '0', '0', '1.01', '100'), /must be positive/);
 });
 
 test('sales returns refund only collected cash after prior returns', () => {
