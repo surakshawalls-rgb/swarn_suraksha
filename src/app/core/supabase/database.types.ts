@@ -81,12 +81,24 @@ export interface Database {
         Insert: never; Update: never; Relationships: [];
       };
       ss_sales: {
-        Row: { id: string; business_id: string; customer_id: string | null; invoice_number: number; idempotency_key: string; request_payload: unknown; subtotal: string; paid_total: string; created_by: string; created_at: string };
+        Row: { id: string; business_id: string; customer_id: string | null; invoice_number: number; idempotency_key: string; request_payload: unknown; subtotal: string; taxable_subtotal: string; gst_percent: string; gst_amount: string; paid_total: string; created_by: string; created_at: string };
         Insert: never; Update: never; Relationships: [];
       };
       ss_sale_lines: {
-        Row: { id: string; business_id: string; sale_id: string; line_number: number; item_description: string; metal: 'gold' | 'silver' | 'other'; purity: string | null; gross_weight_g: string; net_weight_g: string; rate_snapshot_id: string; unit_rate_per_gram: string; making_charge: string; making_charge_percent: string | null; line_total: string; created_at: string };
+        Row: { id: string; business_id: string; sale_id: string; line_number: number; item_description: string; metal: 'gold' | 'silver' | 'other'; purity: string | null; gross_weight_g: string; net_weight_g: string; rate_snapshot_id: string; unit_rate_per_gram: string; making_charge: string; making_charge_percent: string | null; line_total: string; gst_amount: string; created_at: string };
         Insert: never; Update: never; Relationships: [];
+      };
+      ss_stock_intakes: {
+        Row:{id:string;business_id:string;supplier_id:string;intake_number:number;idempotency_key:string;request_payload:Json;received_date:string;item_count:number;total_cost:string;paid_total:string;created_by:string;created_at:string};
+        Insert:never;Update:never;Relationships:[];
+      };
+      ss_stock_items: {
+        Row:{id:string;business_id:string;intake_id:string;item_number:number;description:string;metal:'gold'|'silver';purity:string|null;weight_g:string;purchase_cost:string;status:'available'|'sold'|'returned';sold_to:string|null;sold_date:string|null;return_reason:string|null;return_note:string|null;returned_date:string|null;created_at:string};
+        Insert:never;Update:never;Relationships:[];
+      };
+      ss_stock_payments: {
+        Row:{id:string;business_id:string;intake_id:string;idempotency_key:string;request_payload:Json;amount:string;method:'cash'|'upi'|'bank_transfer'|'card';reference:string|null;payment_date:string;created_by:string;created_at:string};
+        Insert:never;Update:never;Relationships:[];
       };
       ss_sale_exchanges: {
         Row: { id:string; business_id:string; sale_id:string; customer_id:string; exchange_number:number; metal:'gold'|'silver'; purity:string; description:string; gross_weight_g:string; non_metal_deduction_g:string; net_weight_g:string; quality_deduction_percent:string; purity_factor:string; accepted_weight_g:string; rate_snapshot_id:string; rate_source:'reference'|'shop_buy'|'manual'; reference_rate_per_gram:string; applied_rate_per_gram:string; valuation_mode:'selected_purity'|'24k_equivalent'; calculated_exchange_value:string; exchange_value:string; manual_override_reason:string|null; received_at:string; created_by:string; created_at:string };
@@ -210,6 +222,26 @@ export interface Database {
       ss_post_sale_with_exchange: {
         Args: { p_business_id:string; p_customer_id:string|null; p_idempotency_key:string; p_lines:Json; p_exchanges:Json; p_payments:Json; p_excess_action?:string; p_excess_refund_method?:string|null };
         Returns: string;
+      };
+      ss_stock_summary:{
+        Args:{p_business_id:string};
+        Returns:{metal:string;available_weight_g:number;available_items:number}[];
+      };
+      ss_stock_intake:{
+        Args:{p_business_id:string;p_supplier_id:string;p_idempotency_key:string;p_received_date:string;p_items:Json;p_initial_paid?:number|string;p_payment_method?:string|null;p_payment_date?:string|null;p_payment_reference?:string|null};
+        Returns:string;
+      };
+      ss_stock_record_payment:{
+        Args:{p_business_id:string;p_intake_id:string;p_idempotency_key:string;p_amount:number|string;p_method:string;p_payment_date:string;p_reference?:string|null};
+        Returns:string;
+      };
+      ss_stock_mark_sold:{
+        Args:{p_business_id:string;p_stock_item_id:string;p_idempotency_key:string;p_sold_to:string;p_sold_date:string};
+        Returns:string;
+      };
+      ss_stock_mark_returned:{
+        Args:{p_business_id:string;p_stock_item_id:string;p_idempotency_key:string;p_reason:string;p_note?:string|null;p_returned_date:string};
+        Returns:string;
       };
       ss_record_customer_outstanding_payment: {
         Args: { p_business_id:string; p_customer_id:string; p_idempotency_key:string; p_amount:number|string; p_method:string; p_reference?:string|null };

@@ -164,6 +164,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .purchases-page .purchase-form { grid-template-columns: 1fr; }
 .purchase-form > label { max-width: 550px; }
 .purchase-form select { width: 100%; min-height: 40px; border: 1px solid #dfe5df; border-radius: 7px; padding: 10px; background: white; color: #29362f; font: 11px 'DM Sans', sans-serif; }
+.purchase-form > .gst-rate-field { display: grid; gap: 6px; max-width: 320px; padding: 12px; border: 1px solid #e4e9e2; border-radius: 8px; background: #f8faf7; color: #405347; font-size: 11px; font-weight: 700; }
 .customer-search-field { position: relative; z-index: 4; max-width: 550px; }
 .customer-search-results { position: absolute; top: calc(100% + 3px); left: 0; right: 0; display: grid; max-height: 240px; overflow-y: auto; border: 1px solid #dfe5df; border-radius: 7px; background: #fff; box-shadow: 0 8px 22px rgb(34 49 38 / 12%); }
 .customer-search-results button { display: grid; gap: 3px; padding: 9px 11px; border: 0; border-bottom: 1px solid #edf0ec; background: transparent; color: #35453a; text-align: left; cursor: pointer; }

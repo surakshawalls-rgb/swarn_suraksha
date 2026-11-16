@@ -7,7 +7,7 @@ import { Subscription } from 'rxjs';
 import type { jsPDF } from 'jspdf';
 import { LedgerPaymentComponent } from '../../core/financial/ledger-payment.component';
 import { NetworkStatusService } from '../../core/network/network-status.service';
-import { formatFixed, formatInr, parseFixed, percentageCharge, purchaseLineTotal } from '../../core/financial/decimal';
+import { formatFixed, formatInr, parseFixed, percentageAmountMinor, percentageCharge, purchaseLineTotal } from '../../core/financial/decimal';
 import { calculateExchangeValue } from '../../core/financial/exchange';
 import { Json } from '../../core/supabase/database.types';
 import { allocateSaleReturn } from '../../core/financial/sales-return';
@@ -17,9 +17,9 @@ type Metal = 'gold' | 'silver' | 'other';
 type Method = 'cash' | 'upi' | 'bank_transfer' | 'card';
 interface Customer { id: string; full_name: string; phone: string | null; address?: unknown; }
 interface Rate { id: string; metal: 'gold' | 'silver'; purity: string | null; unit: string; reference_rate: string; shop_buy_rate: string; shop_sell_rate: string; recorded_at: string; }
-interface Sale { id: string; customer_id: string | null; invoice_number: number; subtotal: string; paid_total: string; created_at: string; previous_outstanding?:string; customer_advance_credit?:string; total_payable?:string; }
+interface Sale { id: string; customer_id: string | null; invoice_number: number; subtotal: string; taxable_subtotal:string; gst_percent:string; gst_amount:string; paid_total: string; created_at: string; previous_outstanding?:string; customer_advance_credit?:string; total_payable?:string; }
 interface SaleExchangePosting { sale_id:string; previous_outstanding:string; customer_advance_credit:string; total_payable:string; }
-interface SaleLine { id:string; sale_id: string; item_description: string; metal: Metal; purity: string | null; gross_weight_g:string; net_weight_g: string; unit_rate_per_gram: string; making_charge: string; making_charge_percent?:string|null; line_total: string; }
+interface SaleLine { id:string; sale_id: string; item_description: string; metal: Metal; purity: string | null; gross_weight_g:string; net_weight_g: string; unit_rate_per_gram: string; making_charge: string; making_charge_percent?:string|null; line_total: string; gst_amount:string; }
 interface SaleHistoryRecord { sale:Sale; lines:SaleLine[]; exchanges:SaleExchange[]; returns:SaleReturn[]; }
 interface CustomerLedgerRow {event_id:string;event_type:string;description:string;entity_id:string;happened_at:string;debit:string;credit:string;payment_method:string|null;running_balance:string;}
 interface OutstandingExchangeLine {id:string;customer_adjustment_id:string;metal:'gold'|'silver';purity:string;description:string;net_weight_g:string;quality_deduction_percent:string;accepted_weight_g:string;applied_rate_per_gram:string;exchange_value:string;}
@@ -40,7 +40,6 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
     <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>›</span><b>Sales &amp; billing</b></div><div class="top-actions"><button *ngIf="canPost" class="primary-btn" type="button" (click)="editing = !editing" [disabled]="!!pending"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Create invoice</button></div></header>
     <section class="content customers-page purchases-page">
       <div class="welcome"><div><p class="eyebrow">BILLING · CUSTOMER PAYMENTS</p><h1>Bill</h1><p class="subtitle">Record jewellery sales and customer payments.</p></div></div>
-      <div class="config-banner"><span class="banner-icon">i</span><div><b>Tax is not configured</b><p>This invoice does not calculate tax. Confirm the business tax configuration and receipt requirements before using this workflow for tax invoices.</p></div></div>
       <div class="config-banner error-banner" *ngIf="errorMessage" role="alert"><span class="banner-icon">!</span><div><b>Sales data unavailable</b><p>{{errorMessage}}</p></div><button class="text-btn" type="button" (click)="load()">Retry</button></div>
       <p class="save-success" *ngIf="successMessage" role="status">{{successMessage}}</p>
       <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Loading sales ledger</b><p>Reading bills permitted for this workspace.</p></div></div>
@@ -48,7 +47,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
 
       <section class="panel customer-editor" *ngIf="editing && !pending && canPost">
         <div class="panel-head"><div><h2>New invoice</h2><p>Choose an indicative cached rate or saved shop rate, confirm it for this bill, then record any payment received.</p></div><button class="text-btn" type="button" (click)="editing = false">Cancel</button></div>
-        <p class="duplicate-warning" role="note">GoldAPI quotes are international spot references, not domestic shop prices. Verify or edit each rate before posting; the confirmed rate is saved with the invoice.</p>
+        <p class="duplicate-warning" role="note">GoldAPI quotes are international spot references, not domestic shop prices. Verify or edit each rate before posting; the confirmed rate and selected GST are saved with the invoice.</p>
         <form class="customer-form purchase-form" (ngSubmit)="post()">
           <div class="customer-search-field">
             <label for="customer-search">Find customer by name, mobile or address</label>
@@ -129,13 +128,19 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
                 <select [(ngModel)]="line.making_charge_percent" [name]="'makingPercent' + i" required>
                   <option *ngFor="let percent of makingChargeOptions" [value]="percent">{{percent}}%</option>
                 </select>
-                <small class="rate-source-note">5%–20% of gold value · 10% default</small>
+                <small class="rate-source-note">5%–20% of gold value · 12% default</small>
               </label>
               <div class="line-charge"><span>Making charge <b>{{line.metal === 'gold' ? line.making_charge_percent + '% of gold value' : 'Not applied'}}</b></span><strong>{{makingChargeDisplay(line)}}</strong></div>
-              <div class="line-total"><span>Line total</span><b>{{lineTotal(line)}}</b></div>
+              <div class="line-total"><span>Taxable line amount</span><b>{{lineTotal(line)}}</b></div>
             </div>
             <button class="text-btn add-item-btn" type="button" (click)="addLine()" [disabled]="lines.length >= 100"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Add another item</button>
           </div>
+          <label class="gst-rate-field">GST rate
+            <select [(ngModel)]="gstPercent" name="gstPercent" required>
+              <option *ngFor="let percent of gstOptions" [value]="percent">{{percent}}%</option>
+            </select>
+            <small class="rate-source-note">Applied to the full jewellery subtotal, including making charges.</small>
+          </label>
           <label class="exchange-toggle"><input [(ngModel)]="exchangeEnabled" name="exchangeEnabled" type="checkbox" (ngModelChange)="toggleExchange($event)"> Customer is exchanging old jewellery?</label>
           <section class="exchange-editor" *ngIf="exchangeEnabled">
             <div class="panel-head"><div><h3>Old jewellery received</h3><p>Credit uses the selected purity rate less a 10%–50% quality reduction. This is exchange-in, not a return of a previous sale.</p></div></div>
@@ -158,8 +163,8 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
               <div class="line-total"><span>Net weight · accepted weight · exchange value</span><b>{{exchangeBreakdown(item)}}</b></div>
             </article>
             <button class="text-btn add-item-btn" type="button" (click)="addExchange()" [disabled]="exchanges.length >= 100"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Add another exchange item</button>
-            <div class="excess-choice" *ngIf="exchangeTotalMinor > totalMinor">
-              <b>Exchange exceeds this bill by {{inr(fixed(exchangeTotalMinor - totalMinor, 2))}}</b>
+            <div class="excess-choice" *ngIf="exchangeTotalMinor > billTotalMinor">
+              <b>Exchange exceeds this bill by {{inr(fixed(exchangeTotalMinor - billTotalMinor, 2))}}</b>
               <label>Handle excess<select [(ngModel)]="excessAction" name="excessAction"><option value="none">Choose how to handle excess</option><option value="refund">Refund to customer</option><option value="advance_credit">Save as customer advance credit</option></select></label>
               <label *ngIf="excessAction === 'refund'">Refund method<select [(ngModel)]="excessRefundMethod" name="excessRefundMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label>
             </div>
@@ -173,8 +178,8 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
               <button class="text-btn danger-text" type="button" (click)="removePayment(i)">Remove</button>
             </div>
           </div>
-          <div class="purchase-summary"><span>New jewellery subtotal</span><b>{{totalLabel}}</b><span>Old jewellery exchange</span><b>{{inr(fixed(exchangeTotalMinor, 2))}}</b><span>Net sale amount</span><b>{{inr(fixed(netSaleMinor, 2))}}</b><span>Previous outstanding</span><b>{{inr(previousOutstandingForSelectedCustomer())}}</b><span>Total payable</span><b>{{totalPayableLabel}}</b><span>Paid now</span><b>{{paidLabel}}</b><span>Remaining balance</span><b>{{balanceLabel}}</b></div>
-          <p class="duplicate-warning" role="note">Posting is final. A return reverses a complete invoice line at its saved no-tax amount. It reduces unpaid balance first; only the remaining amount can be refunded, capped by payments received.</p>
+          <div class="purchase-summary"><span>Taxable jewellery subtotal</span><b>{{totalLabel}}</b><span>GST ({{gstPercent}}%)</span><b>{{gstLabel}}</b><span>New jewellery total</span><b>{{billTotalLabel}}</b><span>Old jewellery exchange</span><b>{{inr(fixed(exchangeTotalMinor, 2))}}</b><span>Net sale amount</span><b>{{inr(fixed(netSaleMinor, 2))}}</b><span>Previous outstanding</span><b>{{inr(previousOutstandingForSelectedCustomer())}}</b><span>Total payable</span><b>{{totalPayableLabel}}</b><span>Paid now</span><b>{{paidLabel}}</b><span>Remaining balance</span><b>{{balanceLabel}}</b></div>
+          <p class="duplicate-warning" role="note">Posting is final. A return reverses the complete saved invoice line, including its GST. It reduces unpaid balance first; only the remaining amount can be refunded, capped by payments received.</p>
           <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !(network.online$ | async) || !lines.length">{{saving ? 'Posting invoice…' : !(network.online$ | async) ? 'Offline — posting disabled' : 'Post sale'}}</button><span>Pricing uses the saved shop selling rate you selected.</span></div>
         </form>
       </section>
@@ -188,10 +193,10 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
           <td>{{inr(sale.paid_total)}}<small>{{paymentMethods(sale.id)}}</small></td><td><b>{{balance(sale)}}</b></td>
           <td class="bill-actions"><button class="text-btn" type="button" (click)="toggleBillDetails(sale)">{{detailsSaleId===sale.id?'Hide details':'Details'}}</button><button *ngIf="canPost" class="text-btn" type="button" (click)="openReceipt(sale)">Print</button><button *ngIf="canPost" class="text-btn" type="button" (click)="shareReceipt(sale)">WhatsApp PDF</button><ss-ledger-payment *ngIf="canPost && balanceAmount(sale) !== '0.00'" kind="sale" [businessId]="workspace!.id" [transactionId]="sale.id" [remaining]="balanceAmount(sale)" (saved)="load()"></ss-ledger-payment></td>
         </tr><tr *ngIf="detailsSaleId===sale.id"><td colspan="7"><section class="bill-details">
-          <div class="bill-details-columns"><div><h3>This invoice · new jewellery</h3><p *ngFor="let line of linesFor(sale.id)"><b>{{line.item_description}}</b> · {{line.metal | titlecase}}{{line.purity ? ' '+line.purity : ''}} · {{line.net_weight_g}} g × {{inr(line.unit_rate_per_gram)}}/g · {{inr(line.line_total)}}<small *ngIf="returnFor(line)">Returned {{inr(returnFor(line)!.original_line_amount)}} · {{returnFor(line)!.reason}} <button class="text-btn" type="button" (click)="openReturnReceiptForLine(line)">Voucher</button></small><button *ngIf="canPost && !isReturned(line)" class="text-btn" type="button" (click)="startReturn(sale,line)">Return item</button></p></div>
+          <div class="bill-details-columns"><div><h3>This invoice · new jewellery</h3><p *ngFor="let line of linesFor(sale.id)"><b>{{line.item_description}}</b> · {{line.metal | titlecase}}{{line.purity ? ' '+line.purity : ''}} · {{line.net_weight_g}} g × {{inr(line.unit_rate_per_gram)}}/g · {{lineGrossAmount(line)}}<small *ngIf="returnFor(line)">Returned {{inr(returnFor(line)!.original_line_amount)}} · {{returnFor(line)!.reason}} <button class="text-btn" type="button" (click)="openReturnReceiptForLine(line)">Voucher</button></small><button *ngIf="canPost && !isReturned(line)" class="text-btn" type="button" (click)="startReturn(sale,line)">Return item</button></p></div>
           <div><h3>Old jewellery exchanged</h3><p *ngFor="let exchange of exchangesFor(sale.id)"><b>{{exchange.description}}</b> · {{exchange.metal | titlecase}} {{exchange.purity}} · {{exchange.net_weight_g}} g · {{exchange.quality_deduction_percent}}% deduction · credit {{inr(exchange.exchange_value)}}</p><p *ngIf="!exchangesFor(sale.id).length">No jewellery exchanged on this invoice.</p></div></div>
           <div class="bill-history"><h3>Previous customer invoices <span>(up to 5)</span></h3><p *ngIf="!sale.customer_id">This walk-in bill is not linked to a customer history.</p><p *ngIf="billHistoryLoading">Loading previous invoice details…</p><p class="form-error" *ngIf="billHistoryError" role="alert">{{billHistoryError}}</p><p *ngIf="sale.customer_id && !billHistoryLoading && !billHistoryError && !billHistory.length">No earlier invoices found for this customer.</p>
-            <article *ngFor="let history of billHistory"><b>Invoice #{{history.sale.invoice_number}}</b> · {{history.sale.created_at | date:'d MMM y':'Asia/Kolkata'}} · total {{inr(history.sale.subtotal)}} · due {{historyBalance(history)}}<small *ngFor="let line of history.lines">{{line.item_description}} · {{line.metal | titlecase}} {{line.purity || ''}} · {{line.net_weight_g}} g · {{inr(line.line_total)}}<span *ngIf="historyReturn(history,line) as historyReturnRow"> · Returned: {{historyReturnRow.reason}} ({{inr(historyReturnRow.original_line_amount)}})</span></small><small *ngFor="let exchange of history.exchanges">Exchange received: {{exchange.description}} · {{exchange.metal | titlecase}} · {{inr(exchange.exchange_value)}}</small></article>
+            <article *ngFor="let history of billHistory"><b>Invoice #{{history.sale.invoice_number}}</b> · {{history.sale.created_at | date:'d MMM y':'Asia/Kolkata'}} · total {{inr(history.sale.subtotal)}} (GST {{history.sale.gst_percent}}%) · due {{historyBalance(history)}}<small *ngFor="let line of history.lines">{{line.item_description}} · {{line.metal | titlecase}} {{line.purity || ''}} · {{line.net_weight_g}} g · {{lineGrossAmount(line)}}<span *ngIf="historyReturn(history,line) as historyReturnRow"> · Returned: {{historyReturnRow.reason}} ({{inr(historyReturnRow.original_line_amount)}})</span></small><small *ngFor="let exchange of history.exchanges">Exchange received: {{exchange.description}} · {{exchange.metal | titlecase}} · {{inr(exchange.exchange_value)}}</small></article>
           </div>
         </section></td></tr></ng-container></tbody></table></div>
         <ng-template #emptySales><div class="empty-state customer-empty"><span class="empty-art">₹</span><b>No bills recorded</b><p>Create a bill to begin recording jewellery sales.</p></div></ng-template>
@@ -201,11 +206,11 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
       <div class="receipt-screen"><div class="receipt-actions"><p *ngIf="receiptError" class="form-error" role="alert">{{receiptError}}</p><label>Layout<select [(ngModel)]="receiptFormat" name="receiptFormat"><option value="a4">A4</option><option value="thermal">Thermal · 80 mm</option></select></label><button class="primary-btn" type="button" (click)="printReceipt()" [disabled]="receiptPrinting">{{receiptPrinting?'Preparing…':'Print receipt'}}</button><button class="text-btn" type="button" (click)="shareReceipt(receipt)">Share PDF on WhatsApp</button><button class="text-btn" type="button" (click)="closeReceipt()" [disabled]="receiptPrinting">Close preview</button><span role="status">{{receiptShareMessage || 'The receipt includes new items and any old jewellery exchanged.'}}</span></div>
         <article class="receipt-print" [class.receipt-thermal]="receiptFormat==='thermal'"><header><span class="brand-mark">S</span><h1>{{workspace?.name || 'SwarnaSuraksha Business'}}</h1><p>SALES RECEIPT</p></header><hr>
           <div class="receipt-meta"><span>Invoice</span><b>#{{receipt.invoice_number}}</b><span>Date</span><b>{{receipt.created_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</b><span>Customer</span><b>{{customerName(receipt.customer_id)}}{{customerPhone(receipt.customer_id) ? ' · '+customerPhone(receipt.customer_id) : ''}}</b></div>
-          <table><thead><tr><th>Item</th><th>Net weight</th><th>Rate / g</th><th>Making charge</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let line of linesFor(receipt.id)"><td>{{line.item_description}}<small>{{line.metal | titlecase}}{{line.purity ? ' · '+line.purity : ''}}</small></td><td>{{line.net_weight_g}} g</td><td>{{inr(line.unit_rate_per_gram)}}</td><td>{{inr(line.making_charge)}}{{line.making_charge_percent ? ' (' + line.making_charge_percent + '%)' : ''}}</td><td>{{inr(line.line_total)}}</td></tr></tbody></table>
+          <table><thead><tr><th>Item</th><th>Net weight</th><th>Rate / g</th><th>Making charge</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let line of linesFor(receipt.id)"><td>{{line.item_description}}<small>{{line.metal | titlecase}}{{line.purity ? ' · '+line.purity : ''}}</small></td><td>{{line.net_weight_g}} g</td><td>{{inr(line.unit_rate_per_gram)}}</td><td>{{inr(line.making_charge)}}{{line.making_charge_percent ? ' (' + line.making_charge_percent + '%)' : ''}}</td><td>{{lineGrossAmount(line)}}<small>Taxable {{inr(line.line_total)}} · GST {{inr(line.gst_amount)}}</small></td></tr></tbody></table>
           <section class="receipt-exchanges" *ngIf="exchangesFor(receipt.id).length"><h2>Old jewellery received</h2><table><thead><tr><th>Item / metal</th><th>Net weight</th><th>Quality reduction</th><th>Accepted</th><th>Rate / g</th><th>Calculated</th><th>Final value</th></tr></thead><tbody><tr *ngFor="let exchange of exchangesFor(receipt.id)"><td>{{exchange.description}} · {{exchange.metal | titlecase}} {{exchange.purity}}<small>{{exchange.rate_source | titlecase}} · {{exchange.valuation_mode === '24k_equivalent' ? '24K equivalent' : 'Selected purity'}}<span *ngIf="exchange.manual_override_reason"> · Override: {{exchange.manual_override_reason}}</span></small></td><td>{{exchange.net_weight_g}} g</td><td>{{exchange.quality_deduction_percent}}%</td><td>{{exchange.accepted_weight_g}} g</td><td>{{exchange.rate_source === 'manual' ? 'Reference ' + inr(exchange.reference_rate_per_gram) + ' · Applied ' : ''}}{{inr(exchange.applied_rate_per_gram)}}</td><td>{{inr(exchange.calculated_exchange_value)}}</td><td>{{inr(exchange.exchange_value)}}</td></tr></tbody></table></section>
           <section class="receipt-exchanges" *ngIf="returnsFor(receipt.id).length"><h2>Returned items</h2><table><thead><tr><th>Item</th><th>Reason</th><th>Value returned</th><th>Refund</th></tr></thead><tbody><tr *ngFor="let returnedItem of returnsFor(receipt.id)"><td>{{lineForReturn(returnedItem)?.item_description}}</td><td>{{returnedItem.reason}}</td><td>{{inr(returnedItem.original_line_amount)}}</td><td>{{inr(returnedItem.cash_refund)}}</td></tr></tbody></table></section>
-          <div class="receipt-totals"><span>New jewellery subtotal</span><b>{{inr(receipt.subtotal)}}</b><span>Old jewellery exchange</span><b>{{exchangeTotalLabel(receipt.id)}}</b><span>Net after exchange</span><b>{{netSaleForSale(receipt)}}</b><span>Previous outstanding</span><b>{{inr(receipt.previous_outstanding || '0.00')}}</b><span>Total payable</span><b>{{inr(receipt.total_payable || receipt.subtotal)}}</b><span>Tax</span><b>Not configured</b><span>Paid</span><b>{{inr(receipt.paid_total)}}</b><span>Returned</span><b>{{inr(returned(receipt.id))}}</b><span>Refunded</span><b>{{inr(refunded(receipt.id))}}</b><span>Balance due</span><b>{{balance(receipt)}}</b></div>
-          <p class="receipt-note">This receipt reflects the saved item rate and payment records. Tax is not configured; this document is not a GST tax invoice.</p>
+          <div class="receipt-totals"><span>Taxable jewellery subtotal</span><b>{{inr(receipt.taxable_subtotal)}}</b><span>GST ({{receipt.gst_percent}}%)</span><b>{{inr(receipt.gst_amount)}}</b><span>New jewellery total</span><b>{{inr(receipt.subtotal)}}</b><span>Old jewellery exchange</span><b>{{exchangeTotalLabel(receipt.id)}}</b><span>Net after exchange</span><b>{{netSaleForSale(receipt)}}</b><span>Previous outstanding</span><b>{{inr(receipt.previous_outstanding || '0.00')}}</b><span>Total payable</span><b>{{inr(receipt.total_payable || receipt.subtotal)}}</b><span>Paid</span><b>{{inr(receipt.paid_total)}}</b><span>Returned</span><b>{{inr(returned(receipt.id))}}</b><span>Refunded</span><b>{{inr(refunded(receipt.id))}}</b><span>Balance due</span><b>{{balance(receipt)}}</b></div>
+          <p class="receipt-note">GST is calculated at the rate saved on this invoice. Confirm your business registration and applicable tax-invoice requirements before issuing this receipt as a formal GST invoice.</p>
           <div class="receipt-payment" *ngIf="paymentsFor(receipt.id).length"><b>Payments recorded</b><p *ngFor="let payment of paymentsFor(receipt.id)">{{payment.recorded_at ? (payment.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata')+' · ' : ''}}{{payment.method | titlecase}} · {{inr(payment.amount)}}{{payment.reference ? ' · Ref '+payment.reference : ''}}</p></div>
           <footer>Thank you · Recorded in SwarnaSuraksha</footer>
         </article>
@@ -213,7 +218,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
     </div>
     <div class="receipt-overlay" *ngIf="returnTarget as target" role="dialog" aria-modal="true" aria-label="Return invoice item">
       <div class="receipt-screen return-dialog"><div class="receipt-actions"><b>Return item from invoice #{{target.sale.invoice_number}}</b><button class="text-btn" type="button" (click)="closeReturn()" [disabled]="returnSaving">Close</button></div>
-        <article class="panel return-form"><p><b>{{target.line.item_description}}</b> · {{target.line.net_weight_g}} g · Original no-tax line amount {{inr(target.line.line_total)}}</p>
+        <article class="panel return-form"><p><b>{{target.line.item_description}}</b> · {{target.line.net_weight_g}} g · Original line total including GST {{lineGrossAmount(target.line)}}</p>
           <p>Outstanding balance reduction: {{inr(returnBreakdown(target).balanceReduction)}} · Refund due: {{inr(returnBreakdown(target).refund)}}</p>
           <p class="form-error" *ngIf="returnBreakdown(target).error" role="alert">{{returnBreakdown(target).error}}</p>
           <label>Reason for return<textarea [(ngModel)]="returnReason" name="returnReason" maxlength="300" rows="3" [disabled]="!!pendingReturn"></textarea></label>
@@ -229,7 +234,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
         <article class="receipt-print" [class.receipt-thermal]="receiptFormat==='thermal'"><header><span class="brand-mark">S</span><h1>{{workspace?.name || 'SwarnaSuraksha Business'}}</h1><p>SALES RETURN VOUCHER</p></header><hr>
           <div class="receipt-meta"><span>Invoice</span><b>#{{saleForReturn(rr)?.invoice_number}}</b><span>Return date</span><b>{{rr.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</b><span>Customer</span><b>{{customerName(saleForReturn(rr)?.customer_id ?? null)}}</b><span>Item</span><b>{{lineForReturn(rr)?.item_description}}</b></div>
           <div class="receipt-totals"><span>Original saved line amount</span><b>{{inr(rr.original_line_amount)}}</b><span>Unpaid balance reduced</span><b>{{inr(rr.balance_reduction)}}</b><span>Refund paid</span><b>{{inr(rr.cash_refund)}}</b><span>Refund method</span><b>{{rr.refund_method ? (rr.refund_method | titlecase) : 'Not applicable'}}</b></div>
-          <p class="receipt-note"><b>Reason:</b> {{rr.reason}}. This return reverses the complete saved invoice line at its original no-tax amount. The original invoice remains in the ledger.</p><p class="receipt-note">Tax is not configured; this is not a GST tax document. Cash refund on this voucher is recorded in the business cashbook.</p><footer>Return recorded in SwarnaSuraksha</footer>
+          <p class="receipt-note"><b>Reason:</b> {{rr.reason}}. This return reverses the complete saved invoice line, including its original GST. The original invoice remains in the ledger.</p><p class="receipt-note">Cash refund on this voucher is recorded in the business cashbook. Confirm applicable tax-document requirements before treating it as a formal GST credit note.</p><footer>Return recorded in SwarnaSuraksha</footer>
         </article>
       </div>
     </div>
@@ -245,6 +250,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   customerSearch = ''; newCustomerName = ''; newCustomerPhone = ''; newCustomerAddress = '';
   customerError = ''; creatingCustomer = false;
   lines: SaleDraftLine[] = [this.emptyLine()]; payments: PaymentDraft[] = [];
+  gstPercent='3';
   pending: PendingSale | null = null;
   receiptSale:Sale|null=null;receiptError='';receiptPrinting=false;receiptFormat:'a4'|'thermal'='a4';
   receiptShareMessage='';receiptSharing=false;
@@ -257,6 +263,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   excessRefundMethod:Method='cash';
   readonly qualityOptions=['10.00','15.00','20.00','25.00','30.00','35.00','40.00','45.00','50.00'];
   readonly makingChargeOptions=['5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'];
+  readonly gstOptions=['1','2','3','4','5','6','7','8','9','10'];
   exchangesBySale=new Map<string,SaleExchange[]>();
   customerBalanceLoading=false;customerBalanceError='';
   private readonly customerBalances=new Map<string,string>();
@@ -298,7 +305,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       const [customerResult, rateResult, saleResult] = await Promise.all([
         this.withTimeout(client.from('customers').select('id,full_name,phone,address').eq('business_id',workspace.id).eq('status','active').order('full_name').abortSignal(customersController.signal),'Loading customers',()=>customersController.abort()),
         this.withTimeout(client.from('ss_metal_rate_snapshots' as any).select('id,metal,purity,unit,reference_rate,shop_buy_rate,shop_sell_rate,recorded_at').eq('business_id',workspace.id).eq('unit','gram').order('recorded_at',{ascending:false}).limit(100).abortSignal(ratesController.signal),'Loading saved rates',()=>ratesController.abort()),
-        this.withTimeout(client.from('ss_sales' as any).select('id,customer_id,invoice_number,subtotal,paid_total,created_at').eq('business_id',workspace.id).order('created_at',{ascending:false}).limit(100).abortSignal(salesController.signal),'Loading sales',()=>salesController.abort())
+        this.withTimeout(client.from('ss_sales' as any).select('id,customer_id,invoice_number,subtotal,taxable_subtotal,gst_percent,gst_amount,paid_total,created_at').eq('business_id',workspace.id).order('created_at',{ascending:false}).limit(100).abortSignal(salesController.signal),'Loading sales',()=>salesController.abort())
       ]);
       if (customerResult.error) throw new Error(`${customerResult.error.code ?? 'Supabase'}: ${customerResult.error.message}`);
       if (rateResult.error) throw new Error(`${rateResult.error.code ?? 'Supabase'}: ${rateResult.error.message}`);
@@ -306,7 +313,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       const sales = (saleResult.data ?? []) as unknown as Sale[]; const ids = sales.map(s => s.id);
       const linesController = new AbortController(); const paymentsController = new AbortController(); const returnsController = new AbortController(); const exchangesController = new AbortController(); const postingsController = new AbortController();
       const [lineResult,paymentResult,returnResult,exchangeResult,postingResult] = ids.length ? await Promise.all([
-        this.withTimeout(client.from('ss_sale_lines' as any).select('id,sale_id,item_description,metal,purity,gross_weight_g,net_weight_g,unit_rate_per_gram,making_charge,making_charge_percent,line_total').eq('business_id',workspace.id).in('sale_id',ids).abortSignal(linesController.signal),'Loading bill items',()=>linesController.abort()),
+        this.withTimeout(client.from('ss_sale_lines' as any).select('id,sale_id,item_description,metal,purity,gross_weight_g,net_weight_g,unit_rate_per_gram,making_charge,making_charge_percent,line_total,gst_amount').eq('business_id',workspace.id).in('sale_id',ids).abortSignal(linesController.signal),'Loading bill items',()=>linesController.abort()),
         this.withTimeout(client.from('ss_sale_payments' as any).select('sale_id,amount,method,reference,recorded_at').eq('business_id',workspace.id).in('sale_id',ids).abortSignal(paymentsController.signal),'Loading sale payments',()=>paymentsController.abort()),
         this.withTimeout(client.from('ss_sale_returns' as any).select('id,sale_id,sale_line_id,original_line_amount,balance_reduction,cash_refund,refund_method,reason,recorded_at').eq('business_id',workspace.id).in('sale_id',ids).abortSignal(returnsController.signal),'Loading sale returns',()=>returnsController.abort()),
         this.withTimeout(client.from('ss_sale_exchanges').select('id,sale_id,customer_id,exchange_number,metal,purity,description,gross_weight_g,non_metal_deduction_g,net_weight_g,quality_deduction_percent,purity_factor,accepted_weight_g,rate_source,reference_rate_per_gram,applied_rate_per_gram,valuation_mode,calculated_exchange_value,exchange_value,manual_override_reason,received_at').eq('business_id',workspace.id).in('sale_id',ids).order('exchange_number').abortSignal(exchangesController.signal),'Loading old jewellery exchange records',()=>exchangesController.abort()),
@@ -657,7 +664,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     catch{return 0n;}
   }
   get exchangeTotalMinor():bigint{return this.exchangeEnabled?this.exchanges.reduce((sum,item)=>sum+this.exchangeValueMinor(item),0n):0n;}
-  get netSaleMinor():bigint{const net=this.totalMinor-this.exchangeTotalMinor;return net>0n?net:0n;}
+  get netSaleMinor():bigint{const net=this.billTotalMinor-this.exchangeTotalMinor;return net>0n?net:0n;}
   get totalPayableMinor():bigint{const amount=this.netSaleMinor+parseFixed(this.previousOutstandingForSelectedCustomer(),2)-parseFixed(this.customerCreditForSelectedCustomer(),2);return amount>0n?amount:0n;}
   get totalPayableLabel():string{try{return this.inr(formatFixed(this.totalPayableMinor,2));}catch{return '—';}}
   addPayment(): void { if (this.payments.length < 20) this.payments = [...this.payments,{method:'cash',amount:'',reference:''}]; }
@@ -673,7 +680,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     else if(matching.length){line.rate_per_gram=matching[0].shop_sell_rate;line.rate_source_label='Saved shop selling rate';line.rate_snapshot_id=matching[0].id;}
     else{line.rate_per_gram='';line.rate_source_label='No cached quote or saved shop rate';line.rate_snapshot_id='';}
   }
-  metalChanged(line:SaleDraftLine):void{line.purity=line.metal==='gold'?'24K':'';line.making_charge_percent=line.metal==='gold'?'10':'0';line.rate_snapshot_id='';this.rateChanged(line);}
+  metalChanged(line:SaleDraftLine):void{line.purity=line.metal==='gold'?'24K':'';line.making_charge_percent=line.metal==='gold'?'12':'0';line.rate_snapshot_id='';this.rateChanged(line);}
   saleRateChanged(line:SaleDraftLine):void{line.rate_snapshot_id='';line.rate_source_label='Entered billing rate';}
   private cachedQuote(key:string):{data:{rate?:unknown;ratePerKilogram?:unknown;purity?:unknown;providerTimestamp?:unknown};cachedAt:number;stale:boolean}|null{
     try{
@@ -725,8 +732,12 @@ export class SalesComponent implements OnInit, OnDestroy {
     catch { return 'Enter valid weights and charge'; }
   }
   get totalMinor(): bigint { return this.lines.reduce((sum,line)=>{try{return sum+(line.rate_per_gram?purchaseLineTotal(line.net_weight_g||'0',line.rate_per_gram,this.makingCharge(line)):0n);}catch{return sum;}},0n); }
+  get gstMinor():bigint{return percentageAmountMinor(this.totalMinor,this.gstPercent);}
+  get billTotalMinor():bigint{return this.totalMinor+this.gstMinor;}
   get paidMinor(): bigint { return this.payments.reduce((sum,p)=>sum+(p.amount.trim()?parseFixed(p.amount,2):0n),0n); }
   get totalLabel():string { try{return this.inr(formatFixed(this.totalMinor,2));}catch{return 'Complete item rates and weights';} }
+  get gstLabel():string { try{return this.inr(formatFixed(this.gstMinor,2));}catch{return '—';} }
+  get billTotalLabel():string { try{return this.inr(formatFixed(this.billTotalMinor,2));}catch{return '—';} }
   get paidLabel():string { try{return this.inr(formatFixed(this.paidMinor,2));}catch{return 'Invalid amount';} }
   get balanceLabel():string { try{const due=this.totalPayableMinor-this.paidMinor;return this.inr(formatFixed(due>0n?due:0n,2));}catch{return '—';} }
 
@@ -745,7 +756,7 @@ export class SalesComponent implements OnInit, OnDestroy {
           if(line.metal!=='gold'&&makingPercent!==0n)throw new Error(`Making charge must be zero for non-gold item ${i+1}.`);
           if(purchaseLineTotal(line.net_weight_g,formatFixed(rate,4),formatFixed(making,2))<=0n)throw new Error(`Item ${i+1} total must be positive.`);
           const savedRate=this.rates.find(r=>r.id===line.rate_snapshot_id&&r.metal===line.metal&&r.purity===(line.purity||null)&&r.unit==='gram'&&r.shop_sell_rate===formatFixed(rate,4));
-          return {item_description:line.item_description.trim(),metal:line.metal,purity:line.purity||null,gross_weight_g:formatFixed(net,4),net_weight_g:formatFixed(net,4),rate_snapshot_id:savedRate?.id??'',rate_per_gram:formatFixed(rate,4),making_charge_percent:formatFixed(makingPercent,2),making_charge:formatFixed(making,2)};
+          return {item_description:line.item_description.trim(),metal:line.metal,purity:line.purity||null,gross_weight_g:formatFixed(net,4),net_weight_g:formatFixed(net,4),rate_snapshot_id:savedRate?.id??'',rate_per_gram:formatFixed(rate,4),making_charge_percent:formatFixed(makingPercent,2),making_charge:formatFixed(making,2),gst_percent:this.gstPercent};
         });
         for(let i=0;i<lines.length;i++){
           const line=lines[i] as {metal:'gold'|'silver';purity:string|null;rate_per_gram:string;rate_snapshot_id:string;making_charge_percent:string;making_charge:string};
@@ -760,7 +771,9 @@ export class SalesComponent implements OnInit, OnDestroy {
           this.lines[i].rate_per_gram=snapshot.shop_sell_rate;
           line.making_charge=this.makingCharge(this.lines[i]);
         }
-        const total=lines.reduce((sum,line)=>sum+purchaseLineTotal(line.net_weight_g,line.rate_per_gram,line.making_charge),0n);
+        const taxableTotal=lines.reduce((sum,line)=>sum+purchaseLineTotal(line.net_weight_g,line.rate_per_gram,line.making_charge),0n);
+        const tax=percentageAmountMinor(taxableTotal,this.gstPercent);
+        const billTotal=taxableTotal+tax;
         if(this.exchangeEnabled&&!this.customerId)throw new Error('Select or register a customer before receiving old jewellery.');
         const exchanges=this.exchangeEnabled?this.exchanges.map((item,i)=>{
           if(!item.description.trim())throw new Error(`Enter a description for exchange item ${i+1}.`);
@@ -785,10 +798,10 @@ export class SalesComponent implements OnInit, OnDestroy {
           };
         }):[];
         const exchangeTotal=exchanges.reduce((sum,_item,index)=>sum+this.exchangeValueMinor(this.exchanges[index]),0n);
-        if(exchangeTotal>total&&this.excessAction==='none')throw new Error('Exchange value exceeds the new bill. Choose a refund or customer advance credit.');
-        if(exchangeTotal<=total&&this.excessAction!=='none')throw new Error('Choose an excess-handling option only when exchange value exceeds the new bill.');
+        if(exchangeTotal>billTotal&&this.excessAction==='none')throw new Error('Exchange value exceeds the new bill. Choose a refund or customer advance credit.');
+        if(exchangeTotal<=billTotal&&this.excessAction!=='none')throw new Error('Choose an excess-handling option only when exchange value exceeds the new bill.');
         const payments=this.payments.filter(p=>p.amount.trim()).map((p,i)=>{const amount=parseFixed(p.amount,2);if(amount<=0n)throw new Error(`Payment ${i+1} must be positive.`);return {method:p.method,amount:formatFixed(amount,2),reference:p.reference.trim()||null};});
-        const paid=payments.reduce((sum,p)=>sum+parseFixed(p.amount,2),0n);if(paid>(total>exchangeTotal?total-exchangeTotal:0n))throw new Error('Payments received now cannot exceed the amount due after exchange.');
+        const paid=payments.reduce((sum,p)=>sum+parseFixed(p.amount,2),0n);if(paid>(billTotal>exchangeTotal?billTotal-exchangeTotal:0n))throw new Error('Payments received now cannot exceed the amount due after exchange.');
         for(const line of lines)delete (line as {rate_per_gram?:string}).rate_per_gram;
         for(let i=0;i<exchanges.length;i++){
           const item=this.exchanges[i],exchange=exchanges[i] as {metal:'gold'|'silver';purity:string;rate_snapshot_id:string;applied_rate_per_gram:string};
@@ -808,12 +821,14 @@ export class SalesComponent implements OnInit, OnDestroy {
       const result=await this.withTimeout(request,'Posting sale',()=>{timedOut=true;controller.abort();});
       if(result.error){definitiveError=true;throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);}
       if(!result.data)throw new Error('The database did not confirm the invoice ID. Retry safely.');
-      const invoice=result.data;this.pending=null;this.editing=false;this.customerId='';this.customerSearch='';this.lines=[this.emptyLine()];this.payments=[];this.exchanges=[];this.exchangeEnabled=false;this.excessAction='none';this.successMessage=`Invoice ${invoice} and its exchange/payment records were posted atomically.`;await this.load();
+      const invoice=result.data;this.pending=null;this.editing=false;this.customerId='';this.customerSearch='';this.lines=[this.emptyLine()];this.payments=[];this.gstPercent='3';this.exchanges=[];this.exchangeEnabled=false;this.excessAction='none';this.successMessage=`Invoice ${invoice} and its exchange/payment records were posted atomically.`;await this.load();
     }catch(error){this.formError=error instanceof Error?error.message:'Could not post the sale.';if(definitiveError)this.pending=null;}
     finally{this.saving=false;this.cdr.markForCheck();}
   }
   customerName(id:string|null):string{return id?this.customers.find(c=>c.id===id)?.full_name??'Customer unavailable':'Walk-in';}
   linesFor(id:string):SaleLine[]{return this.linesBySale.get(id)??[];}
+  lineGrossAmount(line:SaleLine):string{return this.inr(formatFixed(this.lineGrossAmountMinor(line),2));}
+  private lineGrossAmountMinor(line:SaleLine):bigint{return parseFixed(line.line_total,2)+parseFixed(line.gst_amount||'0',2);}
   paymentMethods(id:string):string{return(this.paymentsBySale.get(id)??[]).map(p=>p.method).join(', ')||'Unpaid';}
   paymentsFor(id:string):SalePayment[]{return this.paymentsBySale.get(id)??[];}
   returnsFor(id:string):SaleReturn[]{return this.returnsBySale.get(id)??[];}
@@ -848,7 +863,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       const rows=this.returnsFor(target.sale.id);
       const allocation=allocateSaleReturn({subtotalMinor:parseFixed(target.sale.subtotal,2),paidMinor:parseFixed(target.sale.paid_total,2),
         priorBalanceReductionsMinor:rows.reduce((n,r)=>n+parseFixed(r.balance_reduction,2),0n),
-        priorCashRefundsMinor:rows.reduce((n,r)=>n+parseFixed(r.cash_refund,2),0n),lineAmountMinor:parseFixed(target.line.line_total,2)});
+        priorCashRefundsMinor:rows.reduce((n,r)=>n+parseFixed(r.cash_refund,2),0n),lineAmountMinor:this.lineGrossAmountMinor(target.line)});
       return{balanceReduction:formatFixed(allocation.balanceReductionMinor,2),refund:formatFixed(allocation.cashRefundMinor,2),error:''};
     }catch(error){return{balanceReduction:'0.00',refund:'0.00',error:error instanceof Error?error.message:'This line cannot be returned.'};}
   }
@@ -887,7 +902,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.billHistoryLoading=true;this.cdr.markForCheck();
     try{
       const previous=await this.withTimeout(client.from('ss_sales' as any)
-        .select('id,customer_id,invoice_number,subtotal,paid_total,created_at')
+        .select('id,customer_id,invoice_number,subtotal,taxable_subtotal,gst_percent,gst_amount,paid_total,created_at')
         .eq('business_id',workspace.id).eq('customer_id',sale.customer_id).lt('created_at',sale.created_at)
         .order('created_at',{ascending:false}).limit(5),'Loading previous customer invoices');
       if(previous.error)throw new Error(`${previous.error.code??'Supabase'}: ${previous.error.message}`);
@@ -895,7 +910,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       const priorSales=(previous.data??[]) as unknown as Sale[],ids=priorSales.map(row=>row.id);
       if(!ids.length)return;
       const [lineResult,exchangeResult,returnResult]=await Promise.all([
-        this.withTimeout(client.from('ss_sale_lines' as any).select('id,sale_id,item_description,metal,purity,gross_weight_g,net_weight_g,unit_rate_per_gram,making_charge,making_charge_percent,line_total').eq('business_id',workspace.id).in('sale_id',ids),'Loading previous invoice items'),
+        this.withTimeout(client.from('ss_sale_lines' as any).select('id,sale_id,item_description,metal,purity,gross_weight_g,net_weight_g,unit_rate_per_gram,making_charge,making_charge_percent,line_total,gst_amount').eq('business_id',workspace.id).in('sale_id',ids),'Loading previous invoice items'),
         this.withTimeout(client.from('ss_sale_exchanges').select('id,sale_id,customer_id,exchange_number,metal,purity,description,gross_weight_g,non_metal_deduction_g,net_weight_g,quality_deduction_percent,purity_factor,accepted_weight_g,rate_source,reference_rate_per_gram,applied_rate_per_gram,valuation_mode,calculated_exchange_value,exchange_value,manual_override_reason,received_at').eq('business_id',workspace.id).in('sale_id',ids).order('exchange_number'),'Loading previous exchanges'),
         this.withTimeout(client.from('ss_sale_returns' as any).select('id,sale_id,sale_line_id,original_line_amount,balance_reduction,cash_refund,refund_method,reason,recorded_at').eq('business_id',workspace.id).in('sale_id',ids),'Loading previous returns')
       ]);
@@ -976,7 +991,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     line();
     text('NEW JEWELLERY',11,true);
     for(const item of this.linesFor(sale.id)){
-      text(`${item.item_description} - ${item.metal.toUpperCase()}${item.purity?` ${item.purity}`:''}; ${item.net_weight_g} g x INR ${item.unit_rate_per_gram}/g; making INR ${item.making_charge}${item.making_charge_percent?` (${item.making_charge_percent}%)`:''}; amount INR ${item.line_total}`);
+      text(`${item.item_description} - ${item.metal.toUpperCase()}${item.purity?` ${item.purity}`:''}; ${item.net_weight_g} g x INR ${item.unit_rate_per_gram}/g; making INR ${item.making_charge}${item.making_charge_percent?` (${item.making_charge_percent}%)`:''}; taxable amount INR ${item.line_total}; GST INR ${item.gst_amount}; total INR ${this.fixed(this.lineGrossAmountMinor(item),2)}`);
     }
     if(!this.linesFor(sale.id).length)text('No item details available.');
     if(this.exchangesFor(sale.id).length){
@@ -991,7 +1006,9 @@ export class SalesComponent implements OnInit, OnDestroy {
       }
     }
     line();text('BILL SUMMARY',11,true);
-    text(`New jewellery subtotal: INR ${sale.subtotal}`);
+    text(`Taxable jewellery subtotal: INR ${sale.taxable_subtotal}`);
+    text(`GST (${sale.gst_percent}%): INR ${sale.gst_amount}`);
+    text(`New jewellery total: INR ${sale.subtotal}`);
     text(`Exchange credit: INR ${formatFixed(this.exchangeTotalForSale(sale.id),2)}`);
     const net=parseFixed(sale.subtotal,2)-this.exchangeTotalForSale(sale.id);
     text(`Net after exchange: INR ${formatFixed(net>0n?net:0n,2)}`);
@@ -999,14 +1016,14 @@ export class SalesComponent implements OnInit, OnDestroy {
     text(`Total payable: INR ${sale.total_payable||sale.subtotal}`,10,true);
     text(`Paid: INR ${sale.paid_total}  |  Balance due: INR ${this.balanceAmount(sale)}`);
     for(const payment of this.paymentsFor(sale.id))text(`Payment: ${payment.method.toUpperCase()} INR ${payment.amount}${payment.reference?` · Ref ${payment.reference}`:''}`);
-    y+=2;line();text('Tax is not configured. This receipt is not a GST tax invoice.',8);
+    y+=2;line();text('GST is calculated at the rate saved on this invoice. Confirm business registration and applicable tax-invoice requirements before issuing this receipt as a formal GST invoice.',8);
     text('Thank you for your business.',9,true);
     return pdf;
   }
   balance(sale:Sale):string{return this.inr(this.balanceAmount(sale));}
   balanceAmount(sale:Sale):string{const due=parseFixed(sale.subtotal,2)-parseFixed(sale.paid_total,2)-this.returnsFor(sale.id).reduce((n,r)=>n+parseFixed(r.balance_reduction,2),0n)-this.exchangeTotalForSale(sale.id);return formatFixed(due>0n?due:0n,2);}
   inr(value:string):string{return formatInr(value,2);}
-  private emptyLine():SaleDraftLine{return{item_description:'',metal:'gold',purity:'24K',net_weight_g:'',rate_per_gram:'',rate_source_label:'',rate_snapshot_id:'',making_charge_percent:'10'};}
+  private emptyLine():SaleDraftLine{return{item_description:'',metal:'gold',purity:'24K',net_weight_g:'',rate_per_gram:'',rate_source_label:'',rate_snapshot_id:'',making_charge_percent:'12'};}
   private emptyExchange():ExchangeDraft{return{metal:'gold',purity:'24K',description:'',gross_weight_g:'',non_metal_deduction_g:'0.0000',quality_deduction_percent:'20.00',purity_factor:'1.000000',valuation_mode:'selected_purity',rate_source:'shop_buy',rate_snapshot_id:'',manual_rate:'',manual_exchange_value:'',manual_override_reason:''};}
   private group<T extends {sale_id:string}>(rows:T[]):Map<string,T[]>{const m=new Map<string,T[]>();for(const row of rows)m.set(row.sale_id,[...(m.get(row.sale_id)??[]),row]);return m;}
   private async withTimeout<T>(request:PromiseLike<T>,action:string,abort?:()=>void):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([Promise.resolve(request),new Promise<T>((_,reject)=>{timer=setTimeout(()=>{abort?.();reject(new Error(`${action} timed out after 20 seconds. Retry with the same details; do not start a duplicate transaction.`));},20000);})]);}finally{if(timer)clearTimeout(timer);}}

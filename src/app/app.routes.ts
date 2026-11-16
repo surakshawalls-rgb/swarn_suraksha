@@ -7,6 +7,8 @@ import { WorkspaceShellComponent } from './features/dashboard/workspace-shell.co
 import { CustomersComponent } from './features/customers/customers.component';
 import { SalesComponent } from './features/sales/sales.component';
 import { GirviComponent } from './features/girvi/girvi.component';
+import { StockComponent } from './features/stock/stock.component';
+import { SuppliersComponent } from './features/suppliers/suppliers.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -21,13 +23,14 @@ export const routes: Routes = [
       { path: 'customers', component: CustomersComponent },
       { path: 'sales', component: SalesComponent },
       { path: 'girvi', component: GirviComponent },
+      { path: 'stock', component: StockComponent },
+      { path: 'suppliers', component: SuppliersComponent },
       { path: 'bill', pathMatch: 'full', redirectTo: 'sales' },
 
       // Legacy URLs redirect to Home. Their source files and database objects
       // are intentionally retained so removing navigation does not delete data.
       { path: 'cashbook', pathMatch: 'full', redirectTo: '' },
       { path: 'rates', pathMatch: 'full', redirectTo: '' },
-      { path: 'suppliers', pathMatch: 'full', redirectTo: '' },
       { path: 'purchases', pathMatch: 'full', redirectTo: '' },
       { path: 'inventory', pathMatch: 'full', redirectTo: '' },
       { path: 'expenses', pathMatch: 'full', redirectTo: '' },

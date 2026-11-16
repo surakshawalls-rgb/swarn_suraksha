@@ -47,6 +47,22 @@ export function formatFixed(value: bigint, scale: number): string {
   return `${negative ? '-' : ''}${whole}.${fraction}`;
 }
 
+/** Applies a percentage stored to two decimal places to paise, rounding half up. */
+export function percentageAmountMinor(amountMinor: bigint, percent: string): bigint {
+  const percentage = parseFixed(percent, 2);
+
+  if (amountMinor < 0n || percentage < 0n || percentage > 10_000n) {
+    throw new RangeError('Amount and percentage must be non-negative and percentage cannot exceed 100%.');
+  }
+
+  const numerator = amountMinor * percentage;
+  const divisor = 10_000n;
+  const quotient = numerator / divisor;
+  const remainder = numerator % divisor;
+
+  return quotient + (remainder * 2n >= divisor ? 1n : 0n);
+}
+
 export function formatInr(value: string | number, scale = 2): string {
   const scaled = parseFixed(value, scale);
   const negative = scaled < 0n;

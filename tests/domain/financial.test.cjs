@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { compoundTotalMinor, formatFixed, formatInr, parseFixed, percentageCharge, purchaseLineTotal } = require('../../.test-build/app/core/financial/decimal.js');
+const { compoundTotalMinor, formatFixed, formatInr, parseFixed, percentageAmountMinor, percentageCharge, purchaseLineTotal } = require('../../.test-build/app/core/financial/decimal.js');
 const { allocateSaleReturn } = require('../../.test-build/app/core/financial/sales-return.js');
 const { calculateExchangeValue } = require('../../.test-build/app/core/financial/exchange.js');
 const { validateCustomerLedgerPage, validateCustomerStatementPage } = require('../../.test-build/app/core/financial/customer-statement.js');
@@ -34,6 +34,15 @@ test('gold making charge is the selected percentage of unrounded metal value', (
   assert.equal(percentageCharge('1.0000', '100.0000', '10.00'), '10.00');
   assert.equal(percentageCharge('0.0001', '50.0000', '10.00'), '0.00');
   assert.throws(() => percentageCharge('1.0000', '100.0000', '100.01'), /cannot exceed 100%/);
+});
+
+test('GST percentage is calculated on paise and rounded half up', () => {
+  assert.equal(formatFixed(percentageAmountMinor(parseFixed('50000.00', 2), '3'), 2), '1500.00');
+  assert.equal(formatFixed(percentageAmountMinor(parseFixed('1.50', 2), '3'), 2), '0.05');
+  assert.equal(formatFixed(percentageAmountMinor(parseFixed('0.01', 2), '50'), 2), '0.01');
+  assert.equal(formatFixed(percentageAmountMinor(parseFixed('0.01', 2), '3'), 2), '0.00');
+  assert.throws(() => percentageAmountMinor(-1n, '3'), /non-negative/);
+  assert.throws(() => percentageAmountMinor(100n, '100.01'), /cannot exceed 100%/);
 });
 
 test('illustrative 3 percent monthly compound schedule uses integer arithmetic', () => {
