@@ -64,6 +64,10 @@ export interface Database {
         Row: { id:string; business_id:string; girvi_id:string; idempotency_key:string; amount:string; payment_method:'cash'|'upi'|'bank_transfer'|'card'; interest_paid:string; principal_paid:string; payment_date:string; received_by:string; created_at:string };
         Insert: never; Update: never; Relationships: [];
       };
+      ss_girvi_topups: {
+        Row: { id:string; business_id:string; girvi_id:string; idempotency_key:string; amount:string; payment_method:'cash'|'upi'|'bank_transfer'|'card'; topup_date:string; received_by:string; created_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
       ss_girvi_audit_events: {
         Row: { id:string; business_id:string; girvi_id:string; actor_user_id:string; event_type:'girvi.created'|'girvi.payment'|'girvi.closed'|'girvi.agreement_print_requested'; payment_id:string|null; safe_metadata:unknown; recorded_at:string };
         Insert: never; Update: never; Relationships: [];
@@ -117,7 +121,7 @@ export interface Database {
         Insert: never; Update: never; Relationships: [];
       };
       ss_girvi_cashbook_entries: {
-        Row: { id:string; business_id:string; girvi_id:string; girvi_payment_id:string|null; entry_type:'loan_disbursement'|'payment'; direction:'in'|'out'; amount:string; method:'cash'|'upi'|'bank_transfer'|'card'|'unknown'; actor_user_id:string; recorded_at:string };
+        Row: { id:string; business_id:string; girvi_id:string; girvi_payment_id:string|null; girvi_topup_id:string|null; entry_type:'loan_disbursement'|'loan_top_up'|'payment'; direction:'in'|'out'; amount:string; method:'cash'|'upi'|'bank_transfer'|'card'|'unknown'; actor_user_id:string; recorded_at:string };
         Insert: never; Update: never; Relationships: [];
       };
       ss_sale_payments: {
@@ -265,6 +269,10 @@ export interface Database {
       };
       ss_girvi_record_payment: {
         Args: { p_business_id:string; p_girvi_id:string; p_idempotency_key:string; p_amount:number|string; p_method:string; p_payment_date?:string };
+        Returns: Json;
+      };
+      ss_girvi_record_topup: {
+        Args: { p_business_id:string; p_girvi_id:string; p_idempotency_key:string; p_amount:number|string; p_method:string; p_topup_date?:string };
         Returns: Json;
       };
       ss_cashbook_page: {

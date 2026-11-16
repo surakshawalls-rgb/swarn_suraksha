@@ -28,6 +28,7 @@ interface Pledge {
   closed_at: string | null; notes: string | null;
 }
 interface Payment { id: string; amount: string; payment_method: PaymentMethod; interest_paid: string; principal_paid: string; payment_date: string; }
+interface TopUp { id: string; amount: string; payment_method: PaymentMethod; topup_date: string; }
 
 @Component({
   standalone: true,
@@ -116,7 +117,8 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
         </div>
         <div class="girvi-overview">
           <article><span>Customer</span><b>{{pledge.customer_name_snapshot || customerName(pledge.customer_id)}}</b><small>{{pledge.customer_phone_snapshot || customerPhone(pledge.customer_id) || 'No mobile'}}</small></article>
-          <article><span>Loan given</span><b>{{inr(pledge.principal_amount)}}</b><small>{{pledge.girvi_date}} · {{pledge.monthly_interest_percent}}% monthly</small></article>
+          <article><span>Original loan</span><b>{{inr(pledge.principal_amount)}}</b><small>{{pledge.girvi_date}} · {{pledge.monthly_interest_percent}}% monthly</small></article>
+          <article><span>Additional advances</span><b>{{inr(totalTopUps())}}</b><small>{{inr(pledge.principal_balance)}} principal remaining</small></article>
           <article class="girvi-balance-card"><span>Current outstanding</span><b>{{inr(currentOutstanding(pledge))}}</b><small>{{inr(currentInterest(pledge))}} accrued interest · {{elapsedDays(pledge)}} days</small></article>
           <article><span>Repayment date</span><b>{{repaymentDate(pledge)}}</b><small>Interest compounds daily</small></article>
         </div>
@@ -139,7 +141,19 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
             <button class="text-btn" type="button" (click)="settleAndClose(pledge)" [disabled]="saving || !hasDailyAccrualSchema(pledge)">Pay full &amp; return jewellery</button>
           </div><p>Payments are applied to interest first, then principal. Full settlement returns the pledged jewellery.</p>
         </div>
+        <div class="girvi-payment girvi-topup" *ngIf="pledge.status === 'active' && canPost">
+          <h3>Give an additional amount</h3>
+          <p class="girvi-payment-intro">Top up this active Girvi without returning the jewellery. Available against assessed value: <b>{{inr(topUpRoom(pledge))}}</b>.</p>
+          <div class="payment-line">
+            <label>Additional amount<input [(ngModel)]="topUpAmount" [ngModelOptions]="{standalone:true}" type="number" min="0.01" step="0.01" [max]="topUpRoom(pledge)" [disabled]="!hasDailyAccrualSchema(pledge) || !hasTopUpRoom(pledge)" placeholder="Enter amount in ₹"></label>
+            <label>Method<select [(ngModel)]="topUpMethod" [ngModelOptions]="{standalone:true}" [disabled]="!hasDailyAccrualSchema(pledge)"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label>
+            <label>Date<input [(ngModel)]="topUpDate" [ngModelOptions]="{standalone:true}" type="date" [disabled]="!hasDailyAccrualSchema(pledge)"></label>
+            <button class="primary-btn" type="button" (click)="recordTopUp(pledge)" [disabled]="saving || !topUpAmount || !hasDailyAccrualSchema(pledge) || !hasTopUpRoom(pledge)">Give additional amount</button>
+          </div>
+          <p>The extra amount is added to principal and starts accruing interest from the top-up date. Total principal cannot exceed the saved assessed jewellery value.</p>
+        </div>
         <p class="form-error" *ngIf="paymentError" role="alert">{{paymentError}}</p>
+        <p class="form-error" *ngIf="topUpError" role="alert">{{topUpError}}</p>
         <div class="config-banner" *ngIf="pledge.status === 'active' && canPost && !hasDailyAccrualSchema(pledge)" role="status"><span class="banner-icon">i</span><div><b>Part payments will be available after the database update</b><p>Apply migration 026_girvi_daily_compounding.sql to enable payment recording with daily interest.</p></div></div>
         <div class="girvi-document-actions" *ngIf="canPost">
           <div><h3>Customer agreement</h3><p>Generate a PDF copy of the agreed collateral and loan terms.</p></div>
@@ -148,6 +162,11 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
         </div>
         <p class="form-error" *ngIf="agreementError" role="alert">{{agreementError}}</p>
         <p class="save-success" *ngIf="agreementMessage" role="status">{{agreementMessage}}</p>
+        <div class="girvi-history-section">
+          <div class="girvi-section-title payment-history-title"><div><h3>Additional advances</h3><p>Extra loan amounts disbursed against this pledge.</p></div><span class="girvi-payment-count">{{topUps.length}} {{topUps.length === 1 ? 'advance' : 'advances'}}</span></div>
+          <div class="table-wrap girvi-history-wrap" *ngIf="topUps.length"><table class="girvi-history-table"><thead><tr><th>Date</th><th>Method</th><th>Amount advanced</th></tr></thead><tbody><tr *ngFor="let item of topUps"><td data-label="Date"><b>{{item.topup_date | date:'d MMM y':'Asia/Kolkata'}}</b></td><td data-label="Method"><span class="girvi-method-pill">{{item.payment_method | titlecase}}</span></td><td data-label="Amount advanced"><b class="girvi-history-amount">{{inr(item.amount)}}</b></td></tr></tbody></table></div>
+          <div class="girvi-no-payments" *ngIf="!topUps.length"><span>₹</span><div><b>No additional advances</b><p>Any top-up given for this pledge will appear here.</p></div></div>
+        </div>
         <div class="girvi-history-section">
           <div class="girvi-section-title payment-history-title"><div><h3>Payment history</h3><p>Recorded repayments and how each was applied.</p></div><span class="girvi-payment-count">{{payments.length}} {{payments.length === 1 ? 'payment' : 'payments'}}</span></div>
           <div class="table-wrap girvi-history-wrap" *ngIf="payments.length; else noPayments"><table class="girvi-history-table"><thead><tr><th>Date</th><th>Payment method</th><th>Amount received</th><th>Interest paid</th><th>Principal paid</th></tr></thead><tbody><tr *ngFor="let item of payments"><td data-label="Date"><b>{{item.payment_date | date:'d MMM y':'Asia/Kolkata'}}</b></td><td data-label="Payment method"><span class="girvi-method-pill">{{item.payment_method | titlecase}}</span></td><td data-label="Amount received"><b class="girvi-history-amount">{{inr(item.amount)}}</b></td><td data-label="Interest paid">{{inr(item.interest_paid)}}</td><td data-label="Principal paid">{{inr(item.principal_paid)}}</td></tr></tbody></table></div>
@@ -158,8 +177,8 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
       <section class="panel customer-list">
         <div class="girvi-other-pledges" *ngIf="selected"><b>Other pledges</b><span>Close the selected details to search all customers and Girvi numbers.</span></div>
         <div class="customer-toolbar" *ngIf="!selected"><label class="search-field">Search customer, mobile or Girvi number<input [(ngModel)]="search" name="search" (ngModelChange)="filterPledges()" placeholder="Search"></label></div>
-        <div class="table-wrap" *ngIf="visiblePledges.length; else noPledges"><table><thead><tr><th>Girvi #</th><th>Customer / mobile</th><th>Jewellery received</th><th>Principal</th><th>Interest / month</th><th>Due date</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody><tr *ngFor="let pledge of visiblePledges"><td>#{{pledge.girvi_number}}</td><td>{{pledge.customer_name_snapshot || customerName(pledge.customer_id)}}<small>{{pledge.customer_phone_snapshot || customerPhone(pledge.customer_id)}}</small></td><td>{{collateralDescription(pledge.id)}}<small>{{pledge.weight_g}} g · assessed {{inr(pledge.estimated_market_value)}}</small></td><td>{{inr(pledge.principal_amount)}}</td><td>{{pledge.monthly_interest_percent}}%</td><td>{{repaymentDate(pledge)}}</td><td><b>{{inr(currentOutstanding(pledge))}}</b></td><td><span class="customer-status" [class.status-active]="pledge.status === 'active'">{{pledge.status | titlecase}}</span></td><td><button class="girvi-view-btn" type="button" (click)="open(pledge)" [attr.aria-label]="'View Girvi pledge ' + pledge.girvi_number">View details</button></td></tr></tbody></table></div>
+        <div class="table-wrap" *ngIf="visiblePledges.length; else noPledges"><table><thead><tr><th>Girvi #</th><th>Customer / mobile</th><th>Jewellery received</th><th>Principal balance</th><th>Interest / month</th><th>Due date</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody><tr *ngFor="let pledge of visiblePledges"><td>#{{pledge.girvi_number}}</td><td>{{pledge.customer_name_snapshot || customerName(pledge.customer_id)}}<small>{{pledge.customer_phone_snapshot || customerPhone(pledge.customer_id)}}</small></td><td>{{collateralDescription(pledge.id)}}<small>{{pledge.weight_g}} g · assessed {{inr(pledge.estimated_market_value)}}</small></td><td>{{inr(pledge.principal_balance)}}</td><td>{{pledge.monthly_interest_percent}}%</td><td>{{repaymentDate(pledge)}}</td><td><b>{{inr(currentOutstanding(pledge))}}</b></td><td><span class="customer-status" [class.status-active]="pledge.status === 'active'">{{pledge.status | titlecase}}</span></td><td><button class="girvi-view-btn" type="button" (click)="open(pledge)" [attr.aria-label]="'View Girvi pledge ' + pledge.girvi_number">View details</button></td></tr></tbody></table></div>
         <ng-template #noPledges><div class="empty-state"><b>{{selected ? 'Selected pledge details are open above' : 'No Girvi records'}}</b><p>{{selected ? 'Close details to see it in the pledge list.' : 'New pledges will appear here.'}}</p></div></ng-template>
       </section>
     </section>
@@ -183,6 +202,7 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
     .girvi-payment p { color: #78867c; font-size: 11px; line-height: 1.55; }
     .girvi-payment .girvi-payment-intro { margin: 0 0 13px; }
     .girvi-payment .payment-line { display: grid; grid-template-columns: minmax(180px, 1.4fr) repeat(2, minmax(130px, 1fr)) auto auto; align-items: end; gap: 10px; }
+    .girvi-topup .payment-line { grid-template-columns: minmax(180px, 1.4fr) repeat(2, minmax(130px, 1fr)) auto; }
     .girvi-payment label { display: grid; gap: 6px; color: #526057; font-size: 10px; font-weight: 600; }
     .girvi-payment input, .girvi-payment select { width: 100%; min-height: 40px; border: 1px solid #dfe5df; border-radius: 7px; padding: 9px 10px; background: #fff; color: #29362f; font: 11px 'DM Sans', sans-serif; }
     .girvi-payment input:disabled, .girvi-payment select:disabled { background: #f0f2ef; color: #929b94; cursor: not-allowed; }
@@ -210,7 +230,7 @@ interface Payment { id: string; amount: string; payment_method: PaymentMethod; i
     .girvi-details-actions { display: flex; align-items: center; gap: 12px; }
     .girvi-close-btn { padding: 8px 11px; border: 1px solid #e3e8e2; border-radius: 7px; background: #fff; color: #5e6d62; font: 600 10px 'DM Sans'; cursor: pointer; }
     .girvi-close-btn:hover { border-color: #bac9bc; background: #f8faf7; }
-    .girvi-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 16px 0 22px; }
+    .girvi-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 16px 0 22px; }
     .girvi-overview article { min-width: 0; display: grid; gap: 5px; padding: 13px; border: 1px solid #e8ede8; border-radius: 9px; background: #fbfcfa; }
     .girvi-overview .girvi-balance-card { border-color: #dce8dd; background: #f3f8f2; }
     .girvi-overview article > span, .girvi-overview small { color: #78867c; font-size: 11px; }
@@ -323,6 +343,7 @@ export class GirviComponent implements OnInit, OnDestroy {
   pledges: Pledge[] = [];
   filteredPledges: Pledge[] = [];
   payments: Payment[] = [];
+  topUps: TopUp[] = [];
   selected: Pledge | null = null;
   showCreate = false;
   saving = false;
@@ -334,6 +355,7 @@ export class GirviComponent implements OnInit, OnDestroy {
   formError = '';
   customerError = '';
   paymentError = '';
+  topUpError = '';
   success = '';
   agreementError = '';
   agreementMessage = '';
@@ -345,11 +367,15 @@ export class GirviComponent implements OnInit, OnDestroy {
   paymentAmount = '';
   paymentMethod: PaymentMethod = 'cash';
   paymentDate = this.today();
+  topUpAmount = '';
+  topUpMethod: PaymentMethod = 'cash';
+  topUpDate = this.today();
   newCustomer = { name: '', phone: '', address: '' };
   draft = this.emptyDraft();
   private readonly collateralByPledge = new Map<string,CollateralItem[]>();
   private pendingCreate: { fingerprint:string; key:string } | null = null;
   private pendingPayment: { fingerprint:string; key:string } | null = null;
+  private pendingTopUp: { fingerprint:string; key:string } | null = null;
   private readonly names = new Map<string,string>();
   private readonly phones = new Map<string,string>();
   private subscription?: Subscription;
@@ -537,18 +563,22 @@ export class GirviComponent implements OnInit, OnDestroy {
 
   async open(pledge:Pledge):Promise<void> {
     this.closeAgreementPreview();
-    this.selected=pledge;this.paymentError='';this.agreementError='';this.agreementMessage='';this.detailError='';this.payments=[];
+    this.selected=pledge;this.paymentError='';this.topUpError='';this.agreementError='';this.agreementMessage='';this.detailError='';this.payments=[];this.topUps=[];
     const client=this.service.client,workspace=this.workspace;
     if(!client||!workspace)return;
     try {
-      const [payments,items]=await Promise.all([
+      const [payments,topUps,items]=await Promise.all([
         client.from('ss_girvi_payments').select('id,amount,payment_method,interest_paid,principal_paid,payment_date')
           .eq('business_id',workspace.id).eq('girvi_id',pledge.id).order('payment_date',{ascending:false}),
+        client.from('ss_girvi_topups').select('id,amount,payment_method,topup_date')
+          .eq('business_id',workspace.id).eq('girvi_id',pledge.id).order('topup_date',{ascending:false}),
         client.from('ss_girvi_items').select('id,girvi_id,item_number,description,condition_notes,metal,purity,weight_g,rate_per_gram,estimated_market_value')
           .eq('business_id',workspace.id).eq('girvi_id',pledge.id).order('item_number')
       ]);
       if(payments.error)this.paymentError=`Payment history could not be loaded: ${payments.error.message}`;
       else this.payments=(payments.data??[]) as Payment[];
+      if(topUps.error)this.topUpError=`Additional advance history could not be loaded: ${topUps.error.message}`;
+      else this.topUps=(topUps.data??[]) as TopUp[];
       if(items.error)this.detailError=`Collateral item details could not be loaded: ${items.error.message}`;
       else this.collateralByPledge.set(pledge.id,(items.data??[]) as CollateralItem[]);
     } catch(error) {
@@ -577,6 +607,31 @@ export class GirviComponent implements OnInit, OnDestroy {
       this.pendingPayment=null;this.success='Payment recorded.';this.paymentAmount='';await this.load();
       const updated=this.pledges.find(row=>row.id===pledge.id);if(updated)await this.open(updated);
     } catch(error) { this.paymentError=error instanceof Error?error.message:'Could not record payment.'; }
+    finally { this.saving=false;this.cdr.markForCheck(); }
+  }
+
+  async recordTopUp(pledge:Pledge):Promise<void> {
+    const client=this.service.client,workspace=this.workspace;
+    if(!client||!workspace||this.saving||!this.canPost)return;
+    let amount:string;
+    try{
+      amount=formatFixed(parseFixed(this.topUpAmount,2),2);
+      if(!this.hasDailyAccrualSchema(pledge))throw new Error('Apply migration 026 before recording Girvi top-ups with daily-compounding interest.');
+      if(pledge.status!=='active')throw new Error('Closed Girvi records cannot receive top-ups.');
+      if(this.topUpDate<this.accrualDate(pledge)||this.topUpDate>this.today())throw new Error('Top-up date must be on or after the last accrual date and cannot be in the future.');
+      if(parseFixed(amount,2)<=0n||parseFixed(amount,2)>parseFixed(this.topUpRoom(pledge),2))throw new Error('Top-up must be positive and cannot make principal exceed the assessed jewellery value.');
+    }catch(error){this.topUpError=error instanceof Error?error.message:'Enter a valid additional amount.';return;}
+    const fingerprint=JSON.stringify({pledge:pledge.id,amount,method:this.topUpMethod,date:this.topUpDate});
+    if(!this.pendingTopUp||this.pendingTopUp.fingerprint!==fingerprint)this.pendingTopUp={fingerprint,key:crypto.randomUUID()};
+    if(!window.confirm(`Disburse ${this.inr(amount)} more against Girvi #${pledge.girvi_number}? It will be added to principal, and total principal will remain within the assessed jewellery value.`))return;
+    this.saving=true;this.topUpError='';
+    try {
+      const result=await client.rpc('ss_girvi_record_topup',{p_business_id:workspace.id,p_girvi_id:pledge.id,p_idempotency_key:this.pendingTopUp.key,p_amount:amount,p_method:this.topUpMethod,p_topup_date:this.topUpDate});
+      if(result.error)throw new Error(result.error.message);
+      if(!result.data)throw new Error('The database did not confirm the additional Girvi amount. Retry safely.');
+      this.pendingTopUp=null;this.success='Additional Girvi amount disbursed.';this.topUpAmount='';await this.load();
+      const updated=this.pledges.find(row=>row.id===pledge.id);if(updated)await this.open(updated);
+    } catch(error) { this.topUpError=error instanceof Error?error.message:'Could not disburse the additional Girvi amount.'; }
     finally { this.saving=false;this.cdr.markForCheck(); }
   }
 
@@ -634,7 +689,8 @@ export class GirviComponent implements OnInit, OnDestroy {
         ?this.agreementPdf
         :await this.prepareAgreementPdf(pledge);
       const file=new File([pdf.output('blob')],this.agreementFileName(pledge),{type:'application/pdf'});
-      const message=`Girvi pledge agreement #${pledge.girvi_number} from ${this.workspace?.name||'Jewellery Business'}. Loan: INR ${pledge.principal_amount}; agreed repayment date: ${this.repaymentDate(pledge)}.`;
+      const totalAdvanced=formatFixed(parseFixed(pledge.principal_amount,2)+parseFixed(this.totalTopUps(),2),2);
+      const message=`Girvi pledge agreement #${pledge.girvi_number} from ${this.workspace?.name||'Jewellery Business'}. Total principal advanced: INR ${totalAdvanced}; principal outstanding: INR ${pledge.principal_balance}; agreed rate: ${pledge.monthly_interest_percent}% monthly.`;
       if(typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]})){
         await navigator.share({files:[file],title:`Girvi agreement #${pledge.girvi_number}`,text:message});
         this.agreementMessage='PDF ready to share. Choose WhatsApp in the share sheet if available.';
@@ -658,6 +714,10 @@ export class GirviComponent implements OnInit, OnDestroy {
     if(!client||!workspace)throw new Error('Select an active business workspace before generating the agreement.');
     const audit=await client.rpc('ss_audit_girvi_agreement_print',{p_business_id:workspace.id,p_girvi_id:pledge.id});
     if(audit.error)throw new Error(`${audit.error.code??'Supabase'}: ${audit.error.message}`);
+    const topUpsResult=await client.from('ss_girvi_topups').select('id,amount,payment_method,topup_date')
+      .eq('business_id',workspace.id).eq('girvi_id',pledge.id).order('topup_date');
+    if(topUpsResult.error)throw new Error(`Additional advances could not be loaded for the agreement: ${topUpsResult.error.message}`);
+    this.topUps=(topUpsResult.data??[]) as TopUp[];
     const {jsPDF}=await import('jspdf');
     const pdf=new jsPDF({unit:'mm',format:'a4'}),left=15,width=180;
     let y=18;
@@ -689,9 +749,19 @@ export class GirviComponent implements OnInit, OnDestroy {
     rule();
     section('Loan and interest terms');
     text(`Total assessed collateral value: INR ${pledge.estimated_market_value}`,9,true);
-    text(`Loan amount disbursed to borrower: INR ${pledge.principal_amount}`,9,true);
+    text(`Original loan disbursed: INR ${pledge.principal_amount}`,9,true);
+    section('Additional advances');
+    if(this.topUps.length){
+      for(const advance of this.topUps){
+        text(`${advance.topup_date} | ${advance.payment_method.replace('_',' ')} | INR ${advance.amount}`,9);
+      }
+    }else{
+      text('No additional advances recorded.');
+    }
+    const totalAdvanced=formatFixed(parseFixed(pledge.principal_amount,2)+parseFixed(this.totalTopUps(),2),2);
+    text(`Total principal disbursed: INR ${totalAdvanced}`,9,true);
     text(`Agreed interest: ${pledge.monthly_interest_percent}% effective monthly rate, compounded daily over a 30-day rate period.`);
-    text('Interest accrues proportionally by elapsed calendar days using daily compounding. The effective rate over 30 days equals the agreed monthly rate. If unpaid by the agreed repayment date, the same agreed rate continues; no separate penalty or fee is included.');
+    text('Interest accrues on the combined outstanding principal and accrued interest. Each additional advance joins the principal and accrues interest from its disbursement date. The effective rate over 30 days equals the agreed monthly rate. If unpaid by the agreed repayment date, the same agreed rate continues; no separate penalty or fee is included.');
     const balances=this.growth(pledge);
     rule();
     const snapshotDate=this.balanceDate(pledge);
@@ -700,7 +770,7 @@ export class GirviComponent implements OnInit, OnDestroy {
     text(`Accrued compound interest: INR ${balances.interest}`,9,true);
     text(`Total outstanding: INR ${formatFixed(parseFixed(balances.principal,2)+parseFixed(balances.interest,2),2)}`,10,true);
     text('Payments are allocated to accrued interest first and then principal. The pledged jewellery will be returned when the full outstanding amount is paid and recorded.');
-    text('The borrower confirms the listed jewellery, metal, purity, weight and assessed values and acknowledges receipt of the loan amount. Any change to these terms must be recorded and accepted by both parties in writing.');
+    text('The borrower confirms the listed jewellery, metal, purity, weight and assessed values and acknowledges receipt of the original loan and any additional advances listed above. Any change to these terms must be recorded and accepted by both parties in writing.');
     if(pledge.notes){rule();section('Additional agreed notes');text(pledge.notes);}
     ensure(32);y+=12;
     pdf.setDrawColor(100,110,101);
@@ -747,6 +817,14 @@ export class GirviComponent implements OnInit, OnDestroy {
   elapsedDays(p:Pledge):number { return girviElapsedDays(this.accrualDate(p),this.balanceDate(p)); }
   currentInterest(p:Pledge):string { return this.growth(p).interest; }
   currentOutstanding(p:Pledge):string { return this.currentOutstandingAt(p,this.balanceDate(p)); }
+  topUpRoom(p:Pledge):string {
+    const room=parseFixed(p.estimated_market_value,2)-parseFixed(p.principal_balance,2);
+    return formatFixed(room>0n?room:0n,2);
+  }
+  hasTopUpRoom(p:Pledge):boolean{return parseFixed(this.topUpRoom(p),2)>0n;}
+  totalTopUps():string {
+    return formatFixed(this.topUps.reduce((sum,item)=>sum+parseFixed(item.amount,2),0n),2);
+  }
   private currentOutstandingAt(p:Pledge,asOfDate:string):string {
     const g=this.growth(p,asOfDate);
     return formatFixed(parseFixed(g.principal,2)+parseFixed(g.interest,2),2);

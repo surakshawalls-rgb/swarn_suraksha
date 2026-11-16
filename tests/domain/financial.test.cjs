@@ -74,6 +74,9 @@ test('Girvi daily accrual uses elapsed calendar days and compounds at an effecti
   assert.deepEqual(girviBalancesAt('50000.00', '0.00', 4, 1), {
     principal: '50000.00', interest: '65.41', outstanding: '50065.41'
   });
+  assert.deepEqual(girviBalancesAt('60000.00', '0.00', 4, 30), {
+    principal: '60000.00', interest: '2400.00', outstanding: '62400.00'
+  });
   assert.throws(() => girviBalancesAt('1000.00', '0.00', 10.01, 1), /between 2% and 10%/);
   assert.throws(() => girviBalancesAt('1000.00', '0.00', 3, -1), /non-negative integer/);
 });
