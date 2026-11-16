@@ -42,6 +42,9 @@ alter table public.ss_sales validate constraint ss_sales_gst_percent_range;
 alter table public.ss_sales validate constraint ss_sales_tax_totals_reconcile;
 alter table public.ss_sale_lines validate constraint ss_sale_lines_gst_amount_nonnegative;
 
+grant select (taxable_subtotal,gst_percent,gst_amount) on public.ss_sales to authenticated;
+grant select (gst_amount) on public.ss_sale_lines to authenticated;
+
 create or replace function public.ss_post_sale(
   p_business_id uuid,
   p_customer_id uuid,
