@@ -57,7 +57,9 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
               <button *ngFor="let customer of filteredCustomers()" type="button" role="option" (click)="selectCustomer(customer)">
                 <b>{{customer.full_name}}</b><small>{{customer.phone || 'No mobile'}}{{customerAddress(customer) ? ' · ' + customerAddress(customer) : ''}}</small>
               </button>
-              <span *ngIf="!filteredCustomers().length" class="customer-search-empty">No matching customer. Add their details below.</span>
+              <span *ngIf="customerSearchLoading" class="customer-search-empty" role="status">Searching customers…</span>
+              <span *ngIf="customerSearchError" class="customer-search-empty form-error" role="alert">{{customerSearchError}} <button class="text-btn" type="button" (click)="searchCustomersNow()">Retry search</button></span>
+              <span *ngIf="!customerSearchLoading && !customerSearchError && !filteredCustomers().length" class="customer-search-empty">No matching customer. Add their details below.</span>
             </span>
           </div>
           <div class="selected-customer" *ngIf="customerId"><span>Selected customer <b>{{customerName(customerId)}}</b></span><button type="button" class="text-btn" (click)="clearCustomerSelection()" [disabled]="!!pendingCustomerPayment">Change</button></div>
@@ -248,6 +250,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   returnsBySale = new Map<string, SaleReturn[]>();
   workspace: BusinessWorkspace | null = null; customerId = '';
   customerSearch = ''; newCustomerName = ''; newCustomerPhone = ''; newCustomerAddress = '';
+  customerSearchResults:Customer[]=[];customerSearchLoading=false;customerSearchError='';
   customerError = ''; creatingCustomer = false;
   lines: SaleDraftLine[] = [this.emptyLine()]; payments: PaymentDraft[] = [];
   gstPercent='3';
@@ -277,6 +280,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   customerExchangeSaving=false;customerExchangeError='';
   pendingCustomerExchange:{key:string;customerId:string;items:Json[]}|null=null;
   private subscription: Subscription | null = null; private requestId = 0;
+  private customerSearchRequest=0;private customerSearchTimer:ReturnType<typeof setTimeout>|undefined;private customerSearchController:AbortController|null=null;
   constructor(private readonly workspaceService: WorkspaceService, readonly network: NetworkStatusService, private readonly cdr: ChangeDetectorRef) {}
   get canPost(): boolean { return this.workspace?.role === 'owner' || this.workspace?.role === 'admin'; }
   fixed(value:bigint,scale:number):string{return formatFixed(value,scale);}
@@ -285,6 +289,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.subscription = this.workspaceService.activeWorkspace$.subscribe(workspace => {
       if (workspace && workspace.id === this.workspace?.id && workspace.role === this.workspace?.role) return;
       this.workspace = workspace;
+      this.cancelCustomerSearch();
+      this.customerSearchResults=[];this.customerSearchLoading=false;this.customerSearchError='';
       this.customerBalanceRequest++;
       this.customerBalanceLoading=false;this.customerBalanceError='';
       this.customerLedgerRequest++;this.customerLedgerLoading=false;this.customerLedgerRows=[];this.customerLedgerExchangeItems.clear();
@@ -295,7 +301,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       if (workspace) void this.load(); else { this.loading = false; this.errorMessage = 'Select a workspace.'; this.cdr.markForCheck(); }
     });
   }
-  ngOnDestroy(): void { this.subscription?.unsubscribe(); this.requestId++; }
+  ngOnDestroy(): void { this.subscription?.unsubscribe();this.cancelCustomerSearch();this.requestId++; }
   async load(): Promise<void> {
     const workspace = this.workspace; const client = this.workspaceService.client;
     if (!workspace || !client) { this.errorMessage = !client ? 'Supabase is not configured.' : 'Select a workspace.'; this.loading = false; this.cdr.markForCheck(); return; }
@@ -341,11 +347,14 @@ export class SalesComponent implements OnInit, OnDestroy {
   filteredCustomers(): Customer[] {
     const q = this.customerSearch.trim().toLocaleLowerCase();
     if (!q) return this.customers;
-    return this.customers.filter(c =>
+    const matches = this.customers.filter(c =>
       c.full_name.toLocaleLowerCase().includes(q) ||
       (c.phone ?? '').toLocaleLowerCase().includes(q) ||
       this.customerAddress(c).toLocaleLowerCase().includes(q)
     );
+    const byId=new Map<string,Customer>();
+    for(const customer of [...matches,...this.customerSearchResults])byId.set(customer.id,customer);
+    return [...byId.values()].sort((a,b)=>a.full_name.localeCompare(b.full_name));
   }
 
   customerAddress(customer:Customer):string{
@@ -361,17 +370,71 @@ export class SalesComponent implements OnInit, OnDestroy {
       this.customerId='';this.customerBalanceRequest++;this.customerBalanceLoading=false;this.customerBalanceError='';
       this.customerLedgerRequest++;this.customerLedgerRows=[];this.customerLedgerExchangeItems.clear();this.customerPaymentAmount='';this.newCustomerName='';this.newCustomerPhone='';this.newCustomerAddress='';
     }
-    this.customerError='';this.cdr.markForCheck();
+    this.customerError='';this.customerSearchError='';
+    if(this.customerSearch.trim())this.scheduleCustomerSearch();
+    else{this.cancelCustomerSearch();this.customerSearchResults=[];this.customerSearchLoading=false;}
+    this.cdr.markForCheck();
   }
   selectCustomer(customer:Customer):void{
+    this.cancelCustomerSearch();
     this.customerId=customer.id;this.customerSearch=customer.full_name;
+    if(!this.customers.some(row=>row.id===customer.id))this.customers=[...this.customers,customer];
     this.newCustomerName=customer.full_name;this.newCustomerPhone=customer.phone??'';
     this.newCustomerAddress=this.customerAddress(customer);
     this.customerChanged();
   }
   clearCustomerSelection():void{
     this.customerId='';this.customerSearch='';this.newCustomerName='';this.newCustomerPhone='';this.newCustomerAddress='';
+    this.cancelCustomerSearch();this.customerSearchResults=[];this.customerSearchLoading=false;this.customerSearchError='';
     this.customerBalanceRequest++;this.customerLedgerRequest++;this.customerBalanceLoading=false;this.customerBalanceError='';this.customerLedgerRows=[];this.customerLedgerExchangeItems.clear();this.customerPaymentAmount='';this.customerPaymentReference='';this.outstandingExchanges=[];this.pendingCustomerExchange=null;this.cdr.markForCheck();
+  }
+  searchCustomersNow():void{
+    if(this.customerSearchTimer)clearTimeout(this.customerSearchTimer);
+    this.customerSearchTimer=undefined;
+    void this.searchCustomers();
+  }
+  private scheduleCustomerSearch():void{
+    if(this.customerSearchTimer)clearTimeout(this.customerSearchTimer);
+    this.customerSearchRequest++;
+    this.customerSearchController?.abort();
+    this.customerSearchLoading=true;
+    this.customerSearchTimer=setTimeout(()=>{this.customerSearchTimer=undefined;void this.searchCustomers();},250);
+  }
+  private cancelCustomerSearch():void{
+    this.customerSearchRequest++;
+    if(this.customerSearchTimer)clearTimeout(this.customerSearchTimer);
+    this.customerSearchTimer=undefined;
+    this.customerSearchController?.abort();
+    this.customerSearchController=null;
+    this.customerSearchLoading=false;
+  }
+  private async searchCustomers():Promise<void>{
+    const workspace=this.workspace,client=this.workspaceService.client,term=this.customerSearch.trim().replace(/[^\p{L}\p{N}\s+_-]/gu,' ').replace(/\s+/g,' ');
+    if(!workspace||!client){
+      this.customerSearchLoading=false;this.customerSearchResults=[];
+      this.customerSearchError=!client?'Supabase is not configured.':'Select a business workspace.';
+      this.cdr.markForCheck();return;
+    }
+    if(!term){this.customerSearchLoading=false;this.customerSearchResults=[];this.cdr.markForCheck();return;}
+    const requestId=++this.customerSearchRequest,controller=new AbortController();
+    this.customerSearchController?.abort();this.customerSearchController=controller;this.customerSearchLoading=true;this.customerSearchError='';
+    const filters=[`full_name.ilike.%${term}%`,`phone.ilike.%${term}%`,`address->>line1.ilike.%${term}%`,`address->>village.ilike.%${term}%`];
+    if(/^\d+$/.test(term))filters.unshift(`customer_code.eq.${term}`);
+    try{
+      const request=client.from('customers').select('id,full_name,phone,address')
+        .eq('business_id',workspace.id).eq('status','active').or(filters.join(','))
+        .order('full_name').limit(50).abortSignal(controller.signal);
+      const result=await this.withTimeout(request,'Searching customers',()=>controller.abort());
+      if(result.error)throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);
+      if(requestId!==this.customerSearchRequest||workspace.id!==this.workspace?.id)return;
+      this.customerSearchResults=(result.data??[]) as unknown as Customer[];
+    }catch(error){
+      if(requestId!==this.customerSearchRequest)return;
+      this.customerSearchError=error instanceof Error?error.message:'Could not search customers.';
+      this.customerSearchResults=[];
+    }finally{
+      if(requestId===this.customerSearchRequest){this.customerSearchLoading=false;this.customerSearchController=null;this.cdr.markForCheck();}
+    }
   }
   customerChanged(): void {
     this.customerError = '';
@@ -571,7 +634,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     const client = this.workspaceService.client;
     const workspace = this.workspace;
     const name = this.newCustomerName.trim();
-    const phone = this.newCustomerPhone.trim();
+    const phone = this.newCustomerPhone.replace(/\D/g, '');
     const addressLine = this.newCustomerAddress.trim();
     if (!client || !workspace) { this.customerError = 'Select a workspace first.'; return; }
     if (!this.canPost) { this.customerError = 'Only an owner or administrator can register customers here.'; return; }
@@ -582,11 +645,26 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     try {
       if (phone) {
-        const normalizedPhone = phone.replace(/\D/g, '');
-        const duplicate = this.customers.find(c => (c.phone ?? '').replace(/\D/g, '') === normalizedPhone);
-        if (duplicate) {
+        const candidates:{id:string;full_name:string;phone:string|null;address:unknown;status:string}[]=[];
+        for(let offset=0;;offset+=500){
+          const controller=new AbortController();
+          const result=await this.withTimeout(
+            client.from('customers').select('id,full_name,phone,address,status').eq('business_id',workspace.id).range(offset,offset+499).abortSignal(controller.signal),
+            'Checking customer mobile number',()=>controller.abort()
+          );
+          if(result.error)throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);
+          const page=(result.data??[]) as unknown as typeof candidates;
+          candidates.push(...page);
+          if(page.length<500)break;
+        }
+        const duplicate=candidates.find(customer=>(customer.phone??'').replace(/\D/g,'')===phone);
+        if(duplicate?.status==='active'){
           this.selectCustomer(duplicate);
-          this.customerError = 'This mobile number is already registered. The existing customer has been selected.';
+          this.customerError='This mobile number is already registered. The existing customer has been selected.';
+          return;
+        }
+        if(duplicate){
+          this.customerError=`This mobile number belongs to archived customer ${duplicate.full_name}. Restore that customer from Customers before creating a bill.`;
           return;
         }
       }
@@ -598,7 +676,10 @@ export class SalesComponent implements OnInit, OnDestroy {
         address,
         status: 'active'
       }).select('id,full_name,phone,address').single();
-      if (result.error) throw new Error(`${result.error.code ?? 'Supabase'}: ${result.error.message}`);
+      if (result.error) {
+        if(result.error.code==='23505')throw new Error('This mobile number is already assigned to a customer. Search for and select the existing customer.');
+        throw new Error(`${result.error.code ?? 'Supabase'}: ${result.error.message}`);
+      }
       const customer = result.data as unknown as Customer;
       this.customers = [...this.customers, customer].sort((a,b) => a.full_name.localeCompare(b.full_name));
       this.selectCustomer(customer);

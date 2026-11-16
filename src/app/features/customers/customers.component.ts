@@ -36,13 +36,13 @@ interface StatementPage extends CustomerLedgerPageAmounts { rows:CustomerLedgerE
         <div class="panel-head"><div><h2>{{editId ? 'Edit customer profile' : 'New customer'}}</h2><p>Existing financial records are retained when a profile is archived.</p></div><button class="text-btn" type="button" (click)="cancelEdit()">Cancel</button></div>
         <form class="customer-form" (ngSubmit)="saveCustomer()">
           <label>Full name <input [(ngModel)]="form.name" name="customerName" required minlength="1" maxlength="160" autocomplete="name"></label>
-          <label>Mobile number <input [(ngModel)]="form.mobile" name="customerMobile" inputmode="tel" autocomplete="tel"></label>
+          <label>Mobile number <input [(ngModel)]="form.mobile" name="customerMobile" inputmode="tel" autocomplete="tel" (ngModelChange)="duplicateCustomer=null;formError=''"></label>
           <label>Email <input [(ngModel)]="form.email" name="customerEmail" type="email" autocomplete="email"></label>
           <label>Address or village <input [(ngModel)]="form.address" name="customerAddress" maxlength="500" autocomplete="street-address"></label>
           <label class="form-notes">Notes <textarea [(ngModel)]="form.notes" name="customerNotes" maxlength="2000" rows="3"></textarea></label>
-          <p class="duplicate-warning" *ngIf="duplicateCustomer" role="status">A customer with this mobile number already exists: <b>{{duplicateCustomer.full_name}}</b> (ID {{duplicateCustomer.customer_code}}). Check the existing profile before continuing.</p>
+          <p class="duplicate-warning" *ngIf="duplicateCustomer" role="alert">This mobile number already belongs to <b>{{duplicateCustomer.full_name}}</b> (ID {{duplicateCustomer.customer_code}}). Each mobile number can belong to only one customer. Use the existing profile instead.</p>
           <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p>
-          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !form.name.trim()">{{saving ? 'Checking and saving…' : duplicateCustomer ? 'Save as separate customer' : 'Save customer'}}</button><button *ngIf="duplicateCustomer" class="text-btn" type="button" (click)="cancelEdit()">Use existing customer</button></div>
+          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !form.name.trim() || !!duplicateCustomer">{{saving ? 'Checking and saving…' : 'Save customer'}}</button><button *ngIf="duplicateCustomer" class="text-btn" type="button" (click)="cancelEdit()">Use existing customer</button></div>
         </form>
       </section>
 
@@ -259,7 +259,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
         const candidates: Customer[] = [];
         for (let offset = 0; ; offset += 500) {
           const request = client.from('customers').select('id, customer_code, full_name, phone, email, address, notes, status, created_at')
-            .eq('business_id', this.workspace.id).eq('status', 'active').range(offset, offset + 499);
+            .eq('business_id', this.workspace.id).range(offset, offset + 499);
           const controller = new AbortController();
           const { data, error } = await this.withTimeout(request.abortSignal(controller.signal), 'Checking for duplicate customers', () => controller.abort());
           if (error) throw error;
@@ -277,6 +277,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
     }
+    if(this.duplicateCustomer)return;
     await this.persistCustomer(mobile);
   }
 
