@@ -57,7 +57,7 @@ export interface Database {
         Insert: never; Update: never; Relationships: [];
       };
       ss_girvi: {
-        Row: { id:string; business_id:string; customer_id:string; girvi_number:number; idempotency_key:string; request_payload:unknown; metal:'gold'|'silver'|'mixed'; purity:string|null; weight_g:string; rate_per_gram:string; estimated_market_value:string; principal_amount:string; principal_balance:string; interest_balance:string; monthly_interest_percent:string; girvi_date:string; maturity_date:string; customer_name_snapshot:string|null; customer_phone_snapshot:string|null; customer_address_snapshot:string|null; last_accrued_months:number; status:'active'|'closed'; closed_at:string|null; jewellery_returned:boolean; returned_at:string|null; notes:string|null; created_by:string; created_at:string; updated_at:string };
+        Row: { id:string; business_id:string; customer_id:string; girvi_number:number; idempotency_key:string; request_payload:unknown; metal:'gold'|'silver'|'mixed'; purity:string|null; weight_g:string; rate_per_gram:string; estimated_market_value:string; principal_amount:string; principal_balance:string; interest_balance:string; monthly_interest_percent:string; girvi_date:string; maturity_date:string; customer_name_snapshot:string|null; customer_phone_snapshot:string|null; customer_address_snapshot:string|null; last_accrued_months:number; last_accrued_date:string; status:'active'|'closed'; closed_at:string|null; jewellery_returned:boolean; returned_at:string|null; notes:string|null; created_by:string; created_at:string; updated_at:string };
         Insert: never; Update: never; Relationships: [];
       };
       ss_girvi_payments: {

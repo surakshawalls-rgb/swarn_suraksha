@@ -51,7 +51,7 @@ This plan converts the product guide into an incremental build order for the cur
 
 - Metal-rate provider, license, API limits, and refresh interval are not supplied. Use manual snapshots only; do not call a provider or label rates live until selected and configured.
 - Applicable tax/GST settings and receipt content require business/accountant confirmation. Keep tax configurable and disabled until configured; do not hard-code a tax rate.
-- Girvi legal permissions, disclosures, interest rules, incomplete-month treatment, repayment allocation, fees, waivers, and rounding require the business's reviewed policy. Pledge posting stays disabled until the business supplies its rules; no universal 3% policy is assumed.
+- Girvi uses the supplied daily-compounding convention (the agreed monthly rate is the effective growth over 30 days), interest-first payment allocation, and release after full settlement. Legal permissions/disclosures and any fees or waivers still require business review; no universal 3% policy is assumed.
 - The initial app has business-level tenancy; branch scope, business role matrix, approval thresholds, and user provisioning policy require confirmation before they become security rules.
 - Receipt numbering, printer models, enabled languages, data retention, backup retention, communication channels, consent/opt-out rules, and the deployment domain remain unspecified.
 

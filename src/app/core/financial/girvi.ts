@@ -25,15 +25,31 @@ export function girviCollateralValue(weightGrams: string, ratePerGram: string): 
   return formatFixed((weight * rate + 500000n) / 1000000n, 2);
 }
 
+export function girviElapsedDays(startDate: string, asOfDate: string): number {
+  const dateValue = (value: string): number => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) throw new RangeError('Girvi dates must use YYYY-MM-DD format.');
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const timestamp = Date.UTC(year, month - 1, day);
+    const date = new Date(timestamp);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      throw new RangeError('Girvi dates must be valid calendar dates.');
+    }
+    return timestamp;
+  };
+  return Math.max(0, (dateValue(asOfDate) - dateValue(startDate)) / 86_400_000);
+}
+
 export function girviBalancesAt(
   principal: string,
   accruedInterest: string,
   monthlyInterestPercent: string | number,
-  accruedMonths: number,
-  completedMonths: number
+  elapsedDays: number
 ): { principal: string; interest: string; outstanding: string } {
-  if (!Number.isInteger(accruedMonths) || !Number.isInteger(completedMonths) || accruedMonths < 0 || completedMonths < accruedMonths) {
-    throw new RangeError('Accrued months must not exceed completed months.');
+  if (!Number.isInteger(elapsedDays) || elapsedDays < 0) {
+    throw new RangeError('Elapsed Girvi days must be a non-negative integer.');
   }
   const rate = Number(monthlyInterestPercent);
   if (!Number.isFinite(rate) || rate < 2 || rate > 10) {
@@ -41,10 +57,11 @@ export function girviBalancesAt(
   }
   let principalMinor = parseFixed(principal, 2);
   let interestMinor = parseFixed(accruedInterest, 2);
-  const rateBasisPoints = BigInt(Math.round(rate * 100));
-  for (let month = accruedMonths; month < completedMonths; month++) {
-    const balance = principalMinor + interestMinor;
-    interestMinor += (balance * rateBasisPoints + 5000n) / 10000n;
+  if (elapsedDays > 0) {
+    const balanceMinor = Number(principalMinor + interestMinor);
+    const growthFactor = Math.pow(1 + rate / 100, elapsedDays / 30);
+    const accruedTotalMinor = Math.round(balanceMinor * growthFactor);
+    interestMinor = BigInt(accruedTotalMinor) - principalMinor;
   }
   return {
     principal: formatFixed(principalMinor, 2),
@@ -58,10 +75,9 @@ export function allocateGirviPayment(
   accruedInterest: string,
   paymentAmount: string,
   monthlyInterestPercent: string | number,
-  accruedMonths: number,
-  completedMonths: number
+  elapsedDays: number
 ): { interestPaid: string; principalPaid: string; principalBalance: string; interestBalance: string } {
-  const balances = girviBalancesAt(principal, accruedInterest, monthlyInterestPercent, accruedMonths, completedMonths);
+  const balances = girviBalancesAt(principal, accruedInterest, monthlyInterestPercent, elapsedDays);
   const paymentMinor = parseFixed(paymentAmount, 2);
   const principalMinor = parseFixed(balances.principal, 2);
   const interestMinor = parseFixed(balances.interest, 2);

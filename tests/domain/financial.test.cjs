@@ -4,7 +4,7 @@ const { compoundTotalMinor, formatFixed, formatInr, parseFixed, percentageCharge
 const { allocateSaleReturn } = require('../../.test-build/app/core/financial/sales-return.js');
 const { calculateExchangeValue } = require('../../.test-build/app/core/financial/exchange.js');
 const { validateCustomerLedgerPage, validateCustomerStatementPage } = require('../../.test-build/app/core/financial/customer-statement.js');
-const { allocateGirviPayment, completedMonthlyPeriods, girviBalancesAt, girviCollateralValue } = require('../../.test-build/app/core/financial/girvi.js');
+const { allocateGirviPayment, completedMonthlyPeriods, girviBalancesAt, girviCollateralValue, girviElapsedDays } = require('../../.test-build/app/core/financial/girvi.js');
 
 test('fixed decimal parsing and formatting preserve currency precision', () => {
   assert.equal(parseFixed('30000.00', 2), 3000000n);
@@ -47,25 +47,33 @@ test('compound schedule rejects negative principal and invalid periods', () => {
   assert.throws(() => compoundTotalMinor(100n, 300, -1), /integer from 0 to 1200/);
 });
 
-test('Girvi compounding counts completed monthly anniversaries with month-end clamping', () => {
+test('Girvi daily accrual uses elapsed calendar days and compounds at an effective 30-day rate', () => {
+  assert.equal(girviElapsedDays('2026-11-15', '2026-11-16'), 1);
+  assert.equal(girviElapsedDays('2024-02-28', '2024-03-01'), 2);
+  assert.equal(girviElapsedDays('2026-11-16', '2026-11-15'), 0);
+  assert.throws(() => girviElapsedDays('2026-02-30', '2026-03-01'), /valid calendar dates/);
   assert.equal(completedMonthlyPeriods('2025-01-31', '2025-02-27'), 0);
   assert.equal(completedMonthlyPeriods('2025-01-31', '2025-02-28'), 1);
   assert.equal(completedMonthlyPeriods('2024-01-31', '2024-02-28'), 0);
   assert.equal(completedMonthlyPeriods('2024-01-31', '2024-02-29'), 1);
-  assert.deepEqual(girviBalancesAt('50000.00', '0.00', 3, 0, 3), {
-    principal: '50000.00', interest: '4636.35', outstanding: '54636.35'
+  assert.deepEqual(girviBalancesAt('50000.00', '0.00', 3, 30), {
+    principal: '50000.00', interest: '1500.00', outstanding: '51500.00'
   });
-  assert.deepEqual(girviBalancesAt('1000.00', '0.00', 10, 0, 1), {
+  assert.deepEqual(girviBalancesAt('1000.00', '0.00', 10, 30), {
     principal: '1000.00', interest: '100.00', outstanding: '1100.00'
   });
-  assert.throws(() => girviBalancesAt('1000.00', '0.00', 10.01, 0, 1), /between 2% and 10%/);
+  assert.deepEqual(girviBalancesAt('50000.00', '0.00', 4, 1), {
+    principal: '50000.00', interest: '65.41', outstanding: '50065.41'
+  });
+  assert.throws(() => girviBalancesAt('1000.00', '0.00', 10.01, 1), /between 2% and 10%/);
+  assert.throws(() => girviBalancesAt('1000.00', '0.00', 3, -1), /non-negative integer/);
 });
 
-test('Girvi payments pay compounded interest before reducing principal', () => {
-  assert.deepEqual(allocateGirviPayment('50000.00', '0.00', '2000.00', 3, 0, 1), {
+test('Girvi payments accrue daily compound interest before reducing principal', () => {
+  assert.deepEqual(allocateGirviPayment('50000.00', '0.00', '2000.00', 3, 30), {
     interestPaid: '1500.00', principalPaid: '500.00', principalBalance: '49500.00', interestBalance: '0.00'
   });
-  assert.throws(() => allocateGirviPayment('50000.00', '0.00', '52000.00', 3, 0, 1), /exceeds the current Girvi outstanding/);
+  assert.throws(() => allocateGirviPayment('50000.00', '0.00', '52000.00', 3, 30), /exceeds the current Girvi outstanding/);
 });
 
 test('Girvi collateral values round each item to paise using its saved purity rate', () => {
