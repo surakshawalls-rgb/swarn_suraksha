@@ -14,7 +14,7 @@ The repository's `001_swarnasuraksha_foundation.sql` is the original foundation 
 
 ## Production
 
-`src/environments/environment.production.ts` uses the same Supabase project URL and public key because no separate production Supabase project was supplied. The production redirect is derived from the deployed page origin and ends at `/auth/callback`. Add the real deployed origin and callback path to Supabase's Redirect URLs when the domain is known; no production domain or DNS was invented. Google Cloud also needs the deployed web origin. The Supabase callback URI remains the provider redirect URI.
+`src/environments/environment.production.ts` uses the same Supabase project URL and public key because no separate production Supabase project was supplied. The production redirect is derived from the deployed page origin and ends at `/auth/callback`. For `https://swarn-suraksha-6cfp.vercel.app`, add `https://swarn-suraksha-6cfp.vercel.app/auth/callback` to Supabase **Authentication → URL Configuration → Redirect URLs**, and add `https://swarn-suraksha-6cfp.vercel.app` to the Google Cloud OAuth client's authorized JavaScript origins. In Google Cloud, keep `https://woikgebywlobpjlihzej.supabase.co/auth/v1/callback` as the authorized redirect URI. Add the corresponding origin and callback URL if you later use a custom domain.
 
 ## Current foundation scope
 
