@@ -1,0 +1,402 @@
+/* ==========================================================================
+   SwarnaSuraksha – NIGHT MODE  ·  "Obsidian & Gold"
+   --------------------------------------------------------------------------
+   A real dark theme (no invert/hue-rotate filters). Everything is scoped to
+   html[data-ss-theme='dark'], which UiPrefsService sets for Night / Auto-night.
+   ========================================================================== */
+
+$obsidian-0: #060908;
+$obsidian-1: #0b100d;
+$panel-top: #18211c;
+$panel-bot: #0f1612;
+$raised: #1d2823;
+$inset: #090d0b;
+$line: rgba(232, 198, 112, 0.14);
+$line-strong: rgba(232, 198, 112, 0.34);
+$ink: #f6f0e0;
+$ink-2: #c4ccc5;
+$ink-3: #8d9a91;
+$gold-1: #fbebb4;
+$gold-2: #f0d58b;
+$gold-3: #d9b25a;
+$gold-4: #b8923c;
+$emerald-1: #3fae7d;
+$emerald-2: #25805a;
+$emerald-3: #14513a;
+$danger: #ff9a8d;
+$warn: #f2bd62;
+$ok: #6fd9a4;
+
+$panel-bg: linear-gradient(180deg, $panel-top 0%, $panel-bot 100%);
+$panel-shadow: 0 1px 0 rgba(255, 244, 205, 0.06) inset, 0 0 0 1px rgba(0, 0, 0, 0.5), 0 18px 36px -18px rgba(0, 0, 0, 0.85);
+$gold-glass: linear-gradient(180deg, rgba(244, 220, 148, 0.10), rgba(244, 220, 148, 0.03));
+
+html[data-ss-theme='dark'] {
+  color-scheme: dark;
+  --ink: #{$ink};
+  --soft: #{$ink-2};
+  --muted: #{$ink-3};
+  --line: #{$line};
+  --canvas: #{$obsidian-1};
+  --surface: #{$panel-bot};
+  --ss-paper: #{$obsidian-1};
+  --ss-ink: #{$ink};
+  --ss-ink-soft: #{$ink-2};
+  --ss-line: #{$line};
+  --ss-lift-1: #{$panel-shadow};
+  --ss-lift-2: #{$panel-shadow};
+
+  /* ------------------------------ Page ------------------------------ */
+  &, body, ion-app, .ion-page { background: $obsidian-0; }
+  body {
+    color: $ink;
+    background:
+      radial-gradient(900px 520px at 92% -10%, rgba(217, 178, 90, 0.16), transparent 62%),
+      radial-gradient(760px 520px at 4% 108%, rgba(37, 128, 90, 0.14), transparent 62%),
+      linear-gradient(180deg, $obsidian-1, $obsidian-0) !important;
+    background-attachment: fixed !important;
+  }
+  .app-main { background: transparent !important; }
+  ::selection { background: rgba(240, 213, 139, 0.35); color: #fff; }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: $obsidian-0; }
+  ::-webkit-scrollbar-thumb { background: #2a362f; border-radius: 8px; border: 2px solid $obsidian-0; }
+  ::-webkit-scrollbar-thumb:hover { background: #3b4a41; }
+
+  /* ----------------------------- Sidebar ----------------------------- */
+  .app-shell .app-sidebar {
+    background:
+      radial-gradient(280px 240px at 0% 0%, rgba(217, 178, 90, 0.16), transparent 70%),
+      linear-gradient(180deg, #0f1612 0%, #070a09 100%);
+    box-shadow: inset -1px 0 0 $line, 18px 0 44px -22px #000;
+  }
+  .app-shell .app-brand b { color: $gold-1; }
+  .app-shell .app-brand small, .app-shell .shell-active small, .app-shell .shell-workspace { color: $ink-3; }
+  .app-shell .shell-active b { color: $ink; }
+  .app-shell .shell-active, .app-shell .shell-workspace select {
+    border: 1px solid $line; background: $gold-glass; color: $ink;
+    box-shadow: 0 1px 0 rgba(255, 244, 205, 0.05) inset, 0 10px 18px -12px #000;
+  }
+  .app-shell .shell-prefs .pref-btn {
+    border-color: $line; background: $gold-glass; color: $ink;
+    box-shadow: 0 1px 0 rgba(255, 244, 205, 0.06) inset, 0 10px 18px -12px #000;
+  }
+  .app-shell .shell-prefs .pref-btn:hover { border-color: $line-strong; background: rgba(244, 220, 148, 0.10); }
+  .app-shell .shell-prefs .pref-btn > svg:first-child { color: $gold-2; }
+  .app-shell .shell-prefs .pref-text small { color: $ink-3; }
+  .app-shell .shell-prefs .pref-menu { background: #121a15; border-color: $line-strong; box-shadow: 0 22px 44px -14px #000; }
+  .app-shell .shell-prefs .pref-menu button { color: $ink-2; }
+  .app-shell .shell-prefs .pref-menu button:hover { background: rgba(244, 220, 148, 0.09); color: $ink; }
+  .app-shell .shell-prefs .pref-menu button.on { color: #2a1d05; background: linear-gradient(180deg, $gold-1, $gold-3); }
+
+  .app-shell .app-sidebar nav a { color: $ink-2; }
+  .app-shell .app-sidebar nav a:hover { background: rgba(244, 220, 148, 0.07); color: $ink; }
+  .app-shell .app-sidebar nav a.selected {
+    color: $gold-1;
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.16), rgba(244, 220, 148, 0.05));
+    box-shadow: 0 0 0 1px $line-strong inset, 0 12px 22px -14px rgba(0, 0, 0, 0.9);
+  }
+  .app-shell .app-sidebar nav a.selected svg { color: $gold-2; }
+  .app-shell .app-sidebar nav a.selected::before { background: linear-gradient(180deg, $gold-1, $gold-4); box-shadow: 0 0 14px rgba(240, 213, 139, 0.8); }
+  .app-shell .shell-user { border-top: 1px solid $line; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55)); }
+  .app-shell .shell-user b { color: $ink; }
+  .app-shell .shell-user small { color: $ink-3; }
+  .app-shell .shell-user button { color: $ink-2; background: rgba(244, 220, 148, 0.07); box-shadow: 0 0 0 1px $line inset; }
+  .app-shell .shell-user button:hover { background: rgba(244, 220, 148, 0.14); color: $ink; }
+
+  /* ------------------------------ Top bar ---------------------------- */
+  .app-main .topbar {
+    background: rgba(8, 12, 10, 0.78);
+    border-bottom: 1px solid $line;
+    box-shadow: 0 14px 28px -22px #000;
+  }
+  .crumb, .crumb span { color: $ink-3; }
+  .crumb a { color: $gold-2; }
+  .crumb b { color: $ink; }
+  .icon-btn { color: $ink-3; }
+
+  /* --------------------------- Headings & text ----------------------- */
+  .welcome h1, .home-hero h1, .page-heading h1 {
+    background: linear-gradient(180deg, #fff8e0 0%, $gold-2 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .welcome h1 span, .home-hero h1 span { -webkit-text-fill-color: transparent; }
+  .subtitle, .home-date, .panel-head p, .heading-copy .subtitle, .price-unit, .list-footer, .overview-foot,
+  .stock-section-heading p:not(.eyebrow), .customer-list-heading p:last-child, .statement-intro,
+  .statement-customer > div > p:last-child, .stock-modal-heading p:last-child, .home-footer,
+  .home-action-copy small, .activity-row small, td small, .empty-activity, .activity-loading,
+  .girvi-payment p, .girvi-section-title p, .girvi-document-actions p { color: $ink-2 !important; }
+  .eyebrow, .customer-list-heading .eyebrow, .stock-section-heading .eyebrow, .statement-customer .eyebrow,
+  .stock-modal-heading .eyebrow { color: $gold-3 !important; }
+  .panel-head h2, .panel h2, .panel h3, .customer-list-heading h2, .stock-section-heading h2, .stock-section-heading h3,
+  .statement-customer h2, .stock-modal-heading h2, .home-section-title, .home-action-copy b, .activity-card h3,
+  .empty-activity b, .heading-copy h2, .empty-panel h2, .error-copy strong, .loading-panel strong,
+  .girvi-details-head h2, .girvi-pdf-dialog h2, .girvi-payment h3, .girvi-collateral-head h3,
+  .line-heading b, .stock-empty b, .empty-state b { color: $ink !important; }
+  .girvi-details-head h2 span { color: $ink-3 !important; }
+  label, .customer-form label, .search-field, .return-form label, .purchase-form label, .setup-content .onboarding-card label,
+  .stock-intake-meta label, .stock-item-draft label, .stock-payment-fields label, .stock-modal-form label,
+  .statement-filter label, .stock-filters label, .girvi-payment label { color: $ink-2 !important; }
+  a { color: $gold-2; }
+  hr { border-color: $line; }
+  .home-footer { border-top-color: $line; }
+
+  /* --------------------------- Raised surfaces ----------------------- */
+  .panel, .setup-card, .metric-card, .status-card, .onboarding-card, .dashboard-card, .metric,
+  .home-action, .activity-card, .stock-metal-card, .stock-item-draft, .stock-modal, .customer-card,
+  .statement-summary article, .purchase-line, .quick-customer, .payment-line, .girvi-payment, .girvi-item,
+  .girvi-overview article, .girvi-detail-panel, .empty-panel, .loading-panel, .error-panel, .receipt-screen,
+  .girvi-pdf-dialog, .auth-modal, .return-dialog, .action-grid button {
+    background: $panel-bg !important;
+    border: 1px solid $line !important;
+    box-shadow: $panel-shadow !important;
+    color: $ink;
+  }
+  .home-action:hover { border-color: $line-strong !important; box-shadow: 0 1px 0 rgba(255, 244, 205, 0.08) inset, 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 0 1px $line-strong, 0 30px 46px -16px rgba(0, 0, 0, 0.9) !important; }
+  .home-action-arrow { background: rgba(244, 220, 148, 0.10) !important; color: $gold-2 !important; }
+  .home-action:hover .home-action-arrow { background: rgba(244, 220, 148, 0.2) !important; }
+  .statement-summary .statement-closing, .girvi-overview .girvi-balance-card {
+    background: linear-gradient(145deg, rgba(63, 174, 125, 0.16), rgba(20, 81, 58, 0.10)) !important;
+    border-color: rgba(111, 217, 164, 0.32) !important;
+  }
+
+  /* Insets / wells / toolbars */
+  .customer-list .customer-toolbar, .stock-filters, .statement-filter, .stock-payment-box, .stock-payment-balance,
+  .stock-payment-history, .girvi-no-payments, .girvi-assessed-total, .girvi-total, .stock-empty, .customer-count,
+  .stock-result-count, .girvi-payment-count, .girvi-method-pill, .statement-method {
+    background: rgba(0, 0, 0, 0.32) !important; border: 1px solid $line !important; color: $ink-2 !important;
+  }
+  .stock-empty, .girvi-no-payments { border-style: dashed !important; }
+  .girvi-total { color: $ink-2 !important; }
+  .girvi-total b, .girvi-assessed-total b { color: $gold-2 !important; }
+  .stock-payment-balance b, .stock-payment-history > div b { color: $gold-2 !important; }
+  .stock-payment-history > div { color: $ink-2 !important; }
+
+  .line-total { background: rgba(244, 220, 148, 0.09) !important; box-shadow: 0 0 0 1px $line inset !important; color: $ink-2 !important; }
+  .line-total b { color: $gold-2 !important; }
+  .purchase-summary, .stock-intake-total {
+    background: linear-gradient(145deg, #1a3a2b 0%, #0b1a13 100%) !important;
+    border: 1px solid rgba(111, 217, 164, 0.24);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 20px 34px -16px #000 !important;
+  }
+
+  /* Metal tiles & icon chips */
+  .stock-metal-card > div > small { color: $ink-3 !important; }
+  .stock-metal-card > div > b { color: $gold-1 !important; text-shadow: 0 0 22px rgba(240, 213, 139, 0.25); }
+  .stock-metal-card > div > b em { color: $ink-3 !important; }
+  .stock-metal-card > div > span { color: $ink-2 !important; }
+  .stock-metal-icon, .statement-avatar, .customer-row-avatar, .empty-icon, .stock-modal-icon, .stock-draft-number, .empty-art, .metric-icon.gold {
+    background: linear-gradient(145deg, $gold-1, $gold-3) !important; color: #2a1d05 !important; border-color: rgba(251, 235, 180, 0.4) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 18px -8px rgba(0, 0, 0, 0.9) !important;
+  }
+  .silver-stock .stock-metal-icon { background: linear-gradient(145deg, #ffffff, #b9c1c9) !important; color: #27313a !important; }
+  .stock-metal-label.gold-label { background: rgba(244, 220, 148, 0.12) !important; color: $gold-2 !important; border-color: $line-strong !important; }
+  .stock-empty > span { color: $gold-3 !important; }
+  .icon-green { background: linear-gradient(145deg, $emerald-1, $emerald-3) !important; color: $gold-1 !important; }
+
+  /* ------------------------------ Tables ----------------------------- */
+  .table-wrap, .customer-table-wrap, .stock-table-wrap, .statement-table-wrap, .girvi-collateral-wrap, .girvi-history-wrap {
+    background: rgba(0, 0, 0, 0.30) !important; border: 1px solid $line !important;
+  }
+  .app-main table th, .app-main .customer-list .customer-directory-table th, .app-main .stock-items-table th,
+  .statement-table th, .girvi-items-table th, .girvi-history-table th {
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.10), rgba(244, 220, 148, 0.04)) !important;
+    color: $gold-3 !important; border-bottom: 1px solid $line !important;
+  }
+  .app-main table td, .app-main .customer-list .customer-directory-table td, .app-main .stock-items-table td,
+  .statement-table td, .girvi-items-table td, .girvi-history-table td {
+    color: $ink-2 !important; border-bottom: 1px solid rgba(232, 198, 112, 0.08) !important;
+  }
+  .app-main table td b, .customer-identity b, .stock-item-name b, .statement-transaction, .statement-table .statement-date,
+  .girvi-items-table td:first-child b, .girvi-history-table td:first-child b { color: $ink !important; }
+  .app-main table tbody tr:hover, .customer-list .customer-directory-table tbody tr:hover, .stock-items-table tbody tr:hover,
+  .statement-table tbody tr:hover, .girvi-history-table tbody tr:hover { background: rgba(244, 220, 148, 0.05) !important; }
+  .stock-weight, .stock-price, .girvi-item-total, .girvi-history-amount, .statement-table .balance-cell { color: $gold-2 !important; }
+  .statement-table .debit-cell { color: $danger !important; }
+  .statement-table .credit-cell { color: $ok !important; }
+  .statement-no-method { color: $ink-3 !important; }
+  .stock-item-name small, .stock-items-table td > small, .stock-payment-totals, .customer-list .customer-directory-table td.customer-identity small,
+  .statement-date small { color: $ink-3 !important; }
+
+  /* Status pills */
+  .item-status, .payment-status, .stock-metal-label, .customer-list .customer-status, .status-chip {
+    background: rgba(255, 255, 255, 0.05) !important; color: $ink-2 !important; border: 1px solid $line !important;
+  }
+  .item-status.item-available, .payment-status.payment-paid, .customer-list .customer-status:not(.archived) {
+    background: rgba(63, 174, 125, 0.14) !important; color: $ok !important; border-color: rgba(111, 217, 164, 0.32) !important;
+  }
+  .payment-status, .payment-status.payment-partial { background: rgba(242, 189, 98, 0.12) !important; color: $warn !important; border-color: rgba(242, 189, 98, 0.32) !important; }
+  .item-status.item-sold { background: rgba(138, 180, 248, 0.12) !important; color: #a9c7ff !important; border-color: rgba(138, 180, 248, 0.3) !important; }
+  .item-status.item-returned { background: rgba(255, 154, 141, 0.12) !important; color: $danger !important; border-color: rgba(255, 154, 141, 0.3) !important; }
+  .customer-list .customer-status > span { background: $ok !important; box-shadow: 0 0 8px $ok; }
+  .customer-list .customer-status.archived > span { background: $ink-3 !important; box-shadow: none; }
+  .stock-inline-action, .text-btn.statement-link { color: $gold-2 !important; }
+  .stock-remove { color: $danger !important; }
+  .stock-add-line { background: rgba(244, 220, 148, 0.06) !important; border-color: $line-strong !important; color: $gold-2 !important; }
+  .stock-row-actions button { background: rgba(63, 174, 125, 0.12) !important; border-color: rgba(111, 217, 164, 0.3) !important; color: $ok !important; }
+  .stock-row-actions .stock-return-action { background: rgba(255, 154, 141, 0.10) !important; border-color: rgba(255, 154, 141, 0.3) !important; color: $danger !important; }
+  .girvi-metal-pill { background: rgba(244, 220, 148, 0.12) !important; color: $gold-2 !important; border-color: $line-strong !important; }
+
+  /* ------------------------ Inputs, selects, textareas --------------- */
+  .app-main input:not([type='checkbox']):not([type='radio']), .app-main select, .app-main textarea,
+  .stock-page input:not([type='checkbox']), .stock-page select, .stock-page textarea,
+  .girvi-payment input, .girvi-payment select, .return-form textarea, .return-form select,
+  .statement-filter input, .customer-list .search-field input, .auth-modal input,
+  .app-shell .shell-workspace select {
+    background: $inset !important; color: $ink !important; border: 1px solid rgba(232, 198, 112, 0.20) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55) inset, 0 1px 0 rgba(255, 244, 205, 0.04) !important;
+    caret-color: $gold-2;
+  }
+  .app-main input::placeholder, .app-main textarea::placeholder, .stock-page input::placeholder { color: #66736b !important; }
+  .app-main input:focus, .app-main select:focus, .app-main textarea:focus, .stock-page input:focus, .stock-page select:focus,
+  .girvi-payment input:focus, .girvi-payment select:focus {
+    border-color: $gold-3 !important; outline: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55) inset, 0 0 0 4px rgba(217, 178, 90, 0.20) !important;
+  }
+  .girvi-payment input:disabled, .girvi-payment select:disabled, .app-main input:disabled, .app-main select:disabled { background: #060908 !important; color: #5d6a62 !important; }
+  select option { background: #111915; color: $ink; }
+  input[type='date'], input[type='datetime-local'], input[type='month'] { color-scheme: dark; }
+  input[type='checkbox'], input[type='radio'] { accent-color: $gold-3; }
+  .exchange-toggle input { accent-color: $gold-3 !important; }
+
+  /* ------------------------------ Buttons ---------------------------- */
+  /* Primary CTA: luminous emerald with gold edge */
+  .app-main .top-actions .primary-btn, .app-main .form-actions .primary-btn, .app-main .primary-btn,
+  .app-main .customer-empty .text-btn:not(.btn-save), .app-main .rate-empty .text-btn:not(.btn-save),
+  .app-main .customer-action.statement-action, .app-main .girvi-view-btn {
+    color: $gold-1 !important; border: 1.5px solid $gold-2 !important;
+    background: linear-gradient(135deg, #278a5f 0%, #0f4631 52%, #217a55 100%) !important;
+    box-shadow: 0 1px 0 rgba(255, 244, 205, 0.5) inset, 0 0 0 4px rgba(240, 213, 139, 0.10), 0 0 26px -6px rgba(63, 174, 125, 0.55), 0 18px 30px -14px #000 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+  }
+  .app-main .top-actions .primary-btn:hover:not(:disabled), .app-main .primary-btn:hover:not(:disabled) { filter: brightness(1.12); }
+
+  /* Gold: Save / PDF */
+  .app-main .text-btn.btn-save, .app-main .payment-line > .btn-save, .app-main .text-btn.btn-pdf, .app-main .girvi-pdf-close {
+    color: #2a1d05 !important; border: 1.5px solid $gold-1 !important;
+    background: linear-gradient(180deg, $gold-1 0%, $gold-2 48%, $gold-3 100%) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset, 0 0 0 4px rgba(240, 213, 139, 0.12), 0 0 26px -8px rgba(240, 213, 139, 0.55), 0 16px 28px -14px #000 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+  .app-main .text-btn.btn-whatsapp { background: linear-gradient(180deg, #3bd37f, #1a9a52) !important; border-color: #6fe0a5 !important; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 0 22px -8px rgba(59, 211, 127, 0.6), 0 14px 24px -14px #000 !important; }
+
+  /* Secondary: dark glass with gold text */
+  .app-main .text-btn:not(.btn-save):not(.btn-pdf):not(.btn-whatsapp):not(.danger-text),
+  .app-main .customer-action:not(.statement-action):not(.archive-action), .app-main .girvi-close-btn, .inline-button {
+    color: $gold-2 !important; border: 1.5px solid $line-strong !important;
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.11), rgba(244, 220, 148, 0.03)) !important;
+    box-shadow: 0 1px 0 rgba(255, 244, 205, 0.08) inset, 0 10px 18px -12px #000 !important;
+    text-shadow: none;
+  }
+  .app-main .text-btn:not(.btn-save):not(.btn-pdf):not(.btn-whatsapp):not(.danger-text):hover:not(:disabled),
+  .app-main .customer-action:not(.statement-action):not(.archive-action):hover, .app-main .girvi-close-btn:hover, .inline-button:hover:not(:disabled) {
+    color: $gold-1 !important; border-color: $gold-2 !important;
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.22), rgba(244, 220, 148, 0.07)) !important;
+    box-shadow: 0 0 0 3px rgba(217, 178, 90, 0.16), 0 12px 22px -12px #000 !important;
+  }
+  .app-main .text-btn.danger-text, .app-main .customer-action.archive-action {
+    color: $danger !important; border-color: rgba(255, 154, 141, 0.38) !important;
+    background: linear-gradient(180deg, rgba(255, 154, 141, 0.12), rgba(255, 154, 141, 0.03)) !important;
+    box-shadow: 0 10px 18px -12px #000 !important;
+  }
+  .app-main .text-btn.danger-text:hover:not(:disabled), .app-main .customer-action.archive-action:hover { background: rgba(255, 154, 141, 0.2) !important; border-color: $danger !important; }
+
+  /* "Add another item" dashed key & exchange toggle */
+  .app-main .add-item-btn {
+    color: $gold-1 !important; border: 2px dashed $line-strong !important;
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.10), rgba(244, 220, 148, 0.03)) !important;
+    box-shadow: 0 12px 22px -14px #000 !important;
+  }
+  .app-main .add-item-btn:hover:not(:disabled) { border-style: solid !important; border-color: $gold-2 !important; background: rgba(244, 220, 148, 0.16) !important; box-shadow: 0 0 0 4px rgba(217, 178, 90, 0.16), 0 16px 26px -14px #000 !important; }
+  .app-main .exchange-toggle {
+    color: $ink !important; border: 1px solid $line !important; border-left: 6px solid $gold-3 !important;
+    background: $panel-bg !important; box-shadow: $panel-shadow !important;
+  }
+
+  /* --------------------------- Banners & alerts ---------------------- */
+  .config-banner, .duplicate-warning, .workspace-prompt, .confirm-note, .stock-confirm-note, .quote-info {
+    background: linear-gradient(180deg, rgba(244, 220, 148, 0.11), rgba(244, 220, 148, 0.04)) !important;
+    border: 1px solid $line-strong !important; box-shadow: $panel-shadow !important;
+  }
+  .config-banner b, .workspace-prompt b { color: $gold-1 !important; }
+  .config-banner p, .duplicate-warning, .workspace-prompt span, .stock-confirm-note, .quote-info p, .quote-time { color: $ink-2 !important; }
+  .config-banner a { color: $gold-2 !important; }
+  .banner-icon, .quote-info-icon { background: rgba(244, 220, 148, 0.18) !important; color: $gold-1 !important; }
+  .config-banner.error-banner, .error-panel, .activity-alert, .auth-alert, .callback-card .error {
+    background: linear-gradient(180deg, rgba(255, 154, 141, 0.14), rgba(255, 154, 141, 0.05)) !important;
+    border: 1px solid rgba(255, 154, 141, 0.38) !important;
+  }
+  .error-banner .banner-icon, .error-icon, .activity-alert-icon { background: rgba(255, 154, 141, 0.2) !important; color: $danger !important; }
+  .error-banner b, .activity-alert b { color: $danger !important; }
+  .activity-alert p, .error-copy p { color: $ink-2 !important; }
+  .activity-alert code { background: rgba(0, 0, 0, 0.4) !important; color: $gold-2; }
+  .form-error, .girvi-pdf-error, .silver-error { color: $danger !important; }
+  .save-success {
+    background: linear-gradient(180deg, rgba(63, 174, 125, 0.18), rgba(63, 174, 125, 0.06)) !important;
+    border: 1px solid rgba(111, 217, 164, 0.35) !important; color: $ok !important; box-shadow: none !important;
+  }
+  .girvi-returned-note { background: rgba(63, 174, 125, 0.14) !important; color: $ok !important; }
+  .loading-spinner, .spinner { border-color: rgba(244, 220, 148, 0.18) !important; border-top-color: $gold-2 !important; }
+
+  /* --------------------- Dashboard / activity extras ----------------- */
+  .activity-row { border-top-color: $line !important; color: $ink-2; }
+  .activity-row b, .activity-row strong { color: $ink !important; }
+  .activity-row strong { color: $gold-2 !important; }
+  .empty-activity { border-top-color: $line !important; }
+  .empty-activity a { color: $gold-2 !important; }
+  .status-indicator { background: $ok !important; box-shadow: 0 0 0 4px rgba(111, 217, 164, 0.18), 0 0 12px $ok !important; }
+  .status-chip { background: rgba(0, 0, 0, 0.45) !important; color: $ink !important; }
+  .rate-source-note, .page-size-note, .cash-reference, .form-notes { color: $ink-3 !important; }
+  .customer-search-results, .customer-search-empty { background: #0f1612 !important; border: 1px solid $line-strong !important; color: $ink-2 !important; box-shadow: 0 22px 40px -14px #000 !important; }
+  .customer-search-results button:hover { background: rgba(244, 220, 148, 0.08) !important; }
+  .inv-no {
+    color: #2a1d05 !important; background: linear-gradient(180deg, $gold-1, $gold-3) !important; border-color: $gold-1 !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 14px -6px rgba(240, 213, 139, 0.55) !important;
+  }
+  .inv-no-lg { margin-bottom: 4px; }
+  .girvi-pdf-dialog iframe { background: #fff; border-color: $line !important; }
+  .girvi-pdf-overlay, .receipt-overlay, .stock-modal-backdrop { background: rgba(0, 0, 0, 0.72) !important; backdrop-filter: blur(6px); }
+  .receipt-actions { border-bottom-color: $line !important; }
+  .receipt-actions span { color: $ink-2 !important; }
+  .stock-modal-heading, .girvi-details-head, .girvi-history-section, .girvi-document-actions, .statement-heading { border-color: $line !important; }
+  .girvi-collateral-wrap .girvi-no-collateral { color: $ink-2 !important; }
+
+  /* Receipts, PDFs and print previews stay white paper on purpose. */
+  .receipt-print, .receipt-paper { background: #fff !important; color: #202124 !important; filter: none !important; box-shadow: 0 30px 60px -20px #000; }
+  .receipt-print * { color: inherit; }
+
+  /* ----------------------- Rate cards (keep the metal) --------------- */
+  .rate-card { box-shadow: 0 0 0 1px rgba(255, 244, 205, 0.18) inset, 0 28px 46px -22px #000, 0 0 60px -26px rgba(240, 213, 139, 0.45); }
+  .rate-card-silver { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset, 0 28px 46px -22px #000, 0 0 60px -30px rgba(200, 214, 230, 0.4); }
+  .more-rates, .retry-button, .refresh-button { filter: none; }
+  .rate-breakdown > div { background: rgba(255, 255, 255, 0.55); }
+  .empty-panel p, .empty-panel h2 { color: $ink !important; }
+
+  /* ------------------------- Login / setup screens ------------------- */
+  .auth-page { background: radial-gradient(700px 420px at 15% 8%, rgba(217, 178, 90, 0.22), transparent 62%), radial-gradient(800px 500px at 92% 100%, rgba(37, 128, 90, 0.26), transparent 60%), linear-gradient(160deg, #0d1511 0%, #040605 100%); }
+  .auth-card, .callback-card {
+    background: $panel-bg !important; border: 1px solid $line-strong !important; color: $ink;
+    box-shadow: 0 1px 0 rgba(255, 244, 205, 0.1) inset, 0 40px 80px -24px #000, 0 0 80px -30px rgba(240, 213, 139, 0.35) !important;
+  }
+  .auth-card h1, .callback-card h1, .callback-card h2 { color: $gold-1 !important; }
+  .login-copy, .auth-note, .callback-card p { color: $ink-2 !important; }
+  .login-footer { color: $ink-3 !important; }
+  .google-button { background: linear-gradient(180deg, #ffffff, #e9ece6) !important; color: #1d2924 !important; box-shadow: 0 3px 0 #9aa398, 0 18px 28px -12px #000 !important; border-color: #fff !important; }
+  .setup-page { background: $obsidian-0 !important; }
+  .setup-brand { background: #0b100d !important; border-bottom: 1px solid $line !important; }
+  .setup-brand b { color: $gold-1 !important; }
+  .setup-brand button { color: $gold-2 !important; }
+  .onboard-icon { background: linear-gradient(145deg, $gold-1, $gold-3) !important; color: #2a1d05 !important; }
+
+  /* Ionic overlays (menus, pickers) */
+  ion-modal, ion-popover, ion-alert { --background: #111915; --color: #{$ink}; }
+}
+
+@media (max-width: 700px) {
+  html[data-ss-theme='dark'] .app-shell .app-sidebar { background: linear-gradient(180deg, #0f1612, #070a09); }
+  html[data-ss-theme='dark'] .customer-card { background: $panel-bg !important; }
+  html[data-ss-theme='dark'] .girvi-items-table tbody tr, html[data-ss-theme='dark'] .girvi-history-table tbody tr {
+    background: $panel-bg !important; border-color: $line !important;
+  }
+}

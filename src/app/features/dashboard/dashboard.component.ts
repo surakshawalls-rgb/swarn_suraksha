@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { RatesComponent } from '../rates/rates.component';
+import { InvoiceNumberPipe } from '../../core/financial/invoice-number';
 import { BusinessWorkspace, WorkspaceService } from './workspace.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, RouterLink, RatesComponent],
+  imports: [CommonModule, IonicModule, RouterLink, RatesComponent, InvoiceNumberPipe],
   template: `
     <header class="topbar home-topbar">
       <div class="crumb"><b>Home</b><span>/</span>{{ workspace?.name || 'Your jewellery business' }}</div>
@@ -62,7 +63,7 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
           <div class="activity-card">
             <h3>Latest bills</h3>
             <div class="activity-row" *ngFor="let bill of recentBills">
-              <span><b>Bill #{{bill.invoice_number}}</b><small>{{customerName(bill.customer_id)}} · {{bill.created_at | date:'d MMM y':'Asia/Kolkata'}}</small></span>
+              <span><b class="inv-no inv-no-lg">{{bill.invoice_number | invoiceNo:bill.created_at}}</b><small>{{customerName(bill.customer_id)}} · {{bill.created_at | date:'d MMM y':'Asia/Kolkata'}}</small></span>
               <strong>{{inr(bill.subtotal)}}</strong>
             </div>
             <div class="empty-activity" *ngIf="!recentBills.length">

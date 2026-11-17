@@ -74,6 +74,17 @@
       <div class="price"><span class="currency-symbol">₹</span>{{ formatRate(rate.rate) }}</div>
       <div class="price-unit">per gram</div>
 
+      <dl class="rate-breakdown">
+        <div>
+          <dt>10 gram</dt>
+          <dd>₹{{ formatRate(rate.rate * 10) }}</dd>
+        </div>
+        <div>
+          <dt>1 bhar <small>({{ silverBharGrams }} g)</small></dt>
+          <dd>₹{{ formatRate(rate.rate * silverBharGrams) }}</dd>
+        </div>
+      </dl>
+
       <div class="card-footer">
         <span>Market reference</span>
         <span>INR / g</span>
