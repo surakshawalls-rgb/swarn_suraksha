@@ -4,33 +4,9 @@ import { LABELS, PATTERNS, TEXT } from './translations';
 export type ThemeMode = 'auto' | 'day' | 'night';
 export type AppLanguage = 'en' | 'hinglish' | 'hi';
 
-/** Night-mode styles. Injected by the service so Night mode works without any extra stylesheet entry. */
+/** Night mode: the real dark palette lives in src/styles/night-premium.scss. Nothing here may invert or filter the page. */
 const DARK_CSS = `
 html[data-ss-theme='dark'] { color-scheme: dark; }
-html[data-ss-theme='dark'] body,
-html[data-ss-theme='dark'] .app-main { background: #131b16 !important; }
-html[data-ss-theme='dark'] .app-main .topbar,
-html[data-ss-theme='dark'] .app-main .content > :not(.stock-modal-backdrop):not(.receipt-overlay):not([role='dialog']) {
-  filter: invert(1) hue-rotate(180deg) contrast(.92);
-}
-html[data-ss-theme='dark'] .app-main .primary-btn,
-html[data-ss-theme='dark'] .app-main .create-button,
-html[data-ss-theme='dark'] .app-main .btn-save,
-html[data-ss-theme='dark'] .app-main .btn-pdf,
-html[data-ss-theme='dark'] .app-main .btn-whatsapp,
-html[data-ss-theme='dark'] .app-main .rate-card,
-html[data-ss-theme='dark'] .app-main .brand-mark,
-html[data-ss-theme='dark'] .app-main .avatar,
-html[data-ss-theme='dark'] .app-main .customer-row-avatar,
-html[data-ss-theme='dark'] .app-main .home-action-icon,
-html[data-ss-theme='dark'] .app-main img {
-  filter: contrast(1.087) hue-rotate(180deg) invert(1);
-}
-html[data-ss-theme='dark'] .app-main .panel,
-html[data-ss-theme='dark'] .app-main .setup-card,
-html[data-ss-theme='dark'] .app-main .home-action,
-html[data-ss-theme='dark'] .app-main .activity-card,
-html[data-ss-theme='dark'] .app-main table { box-shadow: none; }
 `;
 
 /** WhatsApp-style green buttons. Injected with the service so they work without any extra stylesheet entry. */

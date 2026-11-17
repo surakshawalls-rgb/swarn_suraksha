@@ -18,7 +18,9 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
 
     <section class="content home-content">
       <div class="home-hero">
-        <h1>Welcome back<span *ngIf="workspace">, {{ workspace.name }}</span></h1>
+        <span class="hero-eyebrow">Welcome back</span>
+        <h1>{{ workspace?.name || 'Your jewellery business' }}</h1>
+        <div class="hero-ornament" aria-hidden="true"><i></i><em></em><i></i></div>
         <p class="subtitle">Check today’s rates, start a bill or record a girvi.</p>
       </div>
 
@@ -96,9 +98,18 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
   `,
   styles: [`
     .home-content { max-width: 1360px; }
-    .home-hero { margin-bottom: 26px; }
-    .home-hero h1 { margin: 0; font: 700 36px/1.15 'Playfair Display', serif; letter-spacing: -.01em; color: #17241d; overflow-wrap: anywhere; }
-    .home-hero h1 span { color: inherit; text-transform: capitalize; }
+    /* Centred business masthead */
+    .home-hero { max-width: 840px; margin: 8px auto 34px; text-align: center; }
+    .hero-eyebrow { display: inline-block; padding-left: .4em; font: 700 12px 'DM Sans', sans-serif; letter-spacing: .4em; text-transform: uppercase; color: #a67c24; }
+    .home-hero h1 { margin: 12px 0 0; font: 700 clamp(30px, 4.6vw, 50px)/1.1 'Playfair Display', serif; letter-spacing: -.012em; color: #13281d; text-transform: capitalize; overflow-wrap: anywhere; text-shadow: 0 1px 0 #fff, 0 10px 24px rgba(138, 100, 32, .16); }
+    .hero-ornament { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px auto 14px; }
+    .hero-ornament i { display: block; width: min(130px, 18vw); height: 1px; background: linear-gradient(90deg, transparent, #d9b25a); }
+    .hero-ornament i:last-child { background: linear-gradient(270deg, transparent, #d9b25a); }
+    .hero-ornament em { display: block; width: 9px; height: 9px; transform: rotate(45deg); background: linear-gradient(145deg, #f6e7b4, #c29a3e); box-shadow: 0 0 0 4px rgba(217, 178, 90, .2); }
+    .home-hero .subtitle { margin: 0; font-size: 15px; letter-spacing: .01em; color: #5b6a61; }
+    :host-context(html[data-ss-theme='dark']) .hero-eyebrow { color: #e8c670; }
+    :host-context(html[data-ss-theme='dark']) .home-hero h1 { text-shadow: none; }
+    :host-context(html[data-ss-theme='dark']) .hero-ornament em { box-shadow: 0 0 0 4px rgba(232, 198, 112, .18), 0 0 18px rgba(232, 198, 112, .5); }
     .home-date { font-size: 14px; color: #6d7b73; }
 
     .home-section { margin-top: 38px; }

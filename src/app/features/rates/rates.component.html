@@ -15,6 +15,7 @@
     </div>
 
     <div class="heading-actions">
+      <div class="control-capsule">
       <div class="status-chip" role="status">
         <span class="status-indicator" [class.is-busy]="fetching"></span>
         <span>
@@ -22,6 +23,7 @@
         </span>
       </div>
 
+      <span class="capsule-divider" aria-hidden="true"></span>
       <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="fetching || !workspace">
         <svg class="refresh-icon" [class.spinning]="fetching" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
@@ -29,6 +31,7 @@
         </svg>
         {{ fetching ? 'Fetching…' : 'Refresh rates' }}
       </button>
+      </div>
     </div>
   </section>
 
