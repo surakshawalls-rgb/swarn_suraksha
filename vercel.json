@@ -1,3 +1,8 @@
 {
-  "outputDirectory": "dist/swarn-suraksha/browser"
+  "framework": "angular",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/swarn-suraksha/browser",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

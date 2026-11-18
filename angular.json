@@ -12,6 +12,12 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+         "allowedCommonJsDependencies": [
+            "core-js",
+            "html2canvas",
+            "raf",
+            "rgbcolor"
+          ],
             "outputPath": "dist/swarn-suraksha",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -29,9 +35,13 @@
             "styles": [
               "src/styles.scss",
               "src/styles/auth.scss",
-              "src/styles/product.scss"
+              "src/styles/product.scss",
+              "src/styles/pro-theme.scss",
+              "src/styles/premium.scss",
+              "src/styles/night-premium.scss"
             ]
           },
+          
           "configurations": {
             "production": {
               "fileReplacements": [
@@ -43,13 +53,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "8kb",
-                  "maximumError": "16kb"
+                  "maximumWarning": "15kb",
+                  "maximumError": "20kb"
                 }
               ],
               "outputHashing": "all"
