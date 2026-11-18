@@ -67,7 +67,7 @@ export class AuthService implements OnDestroy {
     const client = this.requireClient();
     if (this.oauthInProgress) return;
     this.oauthInProgress = true;
-    const redirectTo = environment.oauthRedirectTo || new URL('/dashboard', window.location.origin).toString();
+    const redirectTo = environment.oauthRedirectTo || new URL('/auth/callback', window.location.origin).toString();
     const { error } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo }
