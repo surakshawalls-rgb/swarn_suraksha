@@ -92,7 +92,7 @@ interface PendingPurchase { key: string; supplierId: string; lines: object[]; pa
           <div class="receipt-totals"><span>Subtotal</span><b>{{inr(receipt.subtotal)}}</b><span>Tax</span><b>Not configured</b><span>Paid</span><b>{{inr(receipt.paid_total)}}</b><span>Balance payable</span><b>{{balance(receipt)}}</b></div>
           <p class="receipt-note">Goods received and amounts are shown from the saved purchase records. Tax is not configured; this voucher is not a GST tax document.</p>
           <div class="receipt-payment" *ngIf="paymentsFor(receipt.id).length"><b>Payments recorded</b><p *ngFor="let payment of paymentsFor(receipt.id)">{{payment.recorded_at ? (payment.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata')+' · ' : ''}}{{payment.method | titlecase}} · {{inr(payment.amount)}}{{payment.reference ? ' · Ref '+payment.reference : ''}}</p></div>
-          <footer>Recorded in SwarnaSuraksha</footer>
+          <footer><div>Recorded in SwarnaSuraksha</div><div>Designed &amp; developed by <a href="https://www.surakshasoftware.in/" target="_blank" rel="noopener noreferrer">Suraksha Software</a></div><div>www.surakshasoftware.in</div></footer>
         </article>
       </div>
     </div>

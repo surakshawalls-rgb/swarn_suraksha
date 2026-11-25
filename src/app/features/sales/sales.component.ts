@@ -1,3 +1,4 @@
+import { renderReceiptPdf } from '../../core/financial/receipt-pdf';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -214,7 +215,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
           <div class="receipt-totals"><span>Taxable jewellery subtotal</span><b>{{inr(receipt.taxable_subtotal)}}</b><span>GST ({{receipt.gst_percent}}%)</span><b>{{inr(receipt.gst_amount)}}</b><span>New jewellery total</span><b>{{inr(receipt.subtotal)}}</b><span>Old jewellery exchange</span><b>{{exchangeTotalLabel(receipt.id)}}</b><span>Net after exchange</span><b>{{netSaleForSale(receipt)}}</b><span>Previous outstanding</span><b>{{inr(receipt.previous_outstanding || '0.00')}}</b><span>Total payable</span><b>{{inr(receipt.total_payable || receipt.subtotal)}}</b><span>Paid</span><b>{{inr(receipt.paid_total)}}</b><span>Returned</span><b>{{inr(returned(receipt.id))}}</b><span>Refunded</span><b>{{inr(refunded(receipt.id))}}</b><span>Balance due</span><b>{{balance(receipt)}}</b></div>
           <p class="receipt-note">GST is calculated at the rate saved on this invoice. Confirm your business registration and applicable tax-invoice requirements before issuing this receipt as a formal GST invoice.</p>
           <div class="receipt-payment" *ngIf="paymentsFor(receipt.id).length"><b>Payments recorded</b><p *ngFor="let payment of paymentsFor(receipt.id)">{{payment.recorded_at ? (payment.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata')+' · ' : ''}}{{payment.method | titlecase}} · {{inr(payment.amount)}}{{payment.reference ? ' · Ref '+payment.reference : ''}}</p></div>
-          <footer>Thank you · Recorded in SwarnaSuraksha</footer>
+          <footer><div>Thank you · Recorded in SwarnaSuraksha</div><div>Designed &amp; developed by <a href="https://www.surakshasoftware.in/" target="_blank" rel="noopener noreferrer">Suraksha Software</a></div><div>www.surakshasoftware.in</div></footer>
         </article>
       </div>
     </div>
@@ -236,7 +237,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
         <article class="receipt-print" [class.receipt-thermal]="receiptFormat==='thermal'"><header><span class="brand-mark">S</span><h1>{{workspace?.name || 'SwarnaSuraksha Business'}}</h1><p>SALES RETURN VOUCHER</p></header><hr>
           <div class="receipt-meta"><span>Invoice</span><b>#{{saleForReturn(rr)?.invoice_number}}</b><span>Return date</span><b>{{rr.recorded_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</b><span>Customer</span><b>{{customerName(saleForReturn(rr)?.customer_id ?? null)}}</b><span>Item</span><b>{{lineForReturn(rr)?.item_description}}</b></div>
           <div class="receipt-totals"><span>Original saved line amount</span><b>{{inr(rr.original_line_amount)}}</b><span>Unpaid balance reduced</span><b>{{inr(rr.balance_reduction)}}</b><span>Refund paid</span><b>{{inr(rr.cash_refund)}}</b><span>Refund method</span><b>{{rr.refund_method ? (rr.refund_method | titlecase) : 'Not applicable'}}</b></div>
-          <p class="receipt-note"><b>Reason:</b> {{rr.reason}}. This return reverses the complete saved invoice line, including its original GST. The original invoice remains in the ledger.</p><p class="receipt-note">Cash refund on this voucher is recorded in the business cashbook. Confirm applicable tax-document requirements before treating it as a formal GST credit note.</p><footer>Return recorded in SwarnaSuraksha</footer>
+          <p class="receipt-note"><b>Reason:</b> {{rr.reason}}. This return reverses the complete saved invoice line, including its original GST. The original invoice remains in the ledger.</p><p class="receipt-note">Cash refund on this voucher is recorded in the business cashbook. Confirm applicable tax-document requirements before treating it as a formal GST credit note.</p><footer><div>Return recorded in SwarnaSuraksha</div><div>Designed &amp; developed by <a href="https://www.surakshasoftware.in/" target="_blank" rel="noopener noreferrer">Suraksha Software</a></div><div>www.surakshasoftware.in</div></footer>
         </article>
       </div>
     </div>
@@ -1071,45 +1072,18 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
   private async createReceiptPdf(sale:Sale):Promise<jsPDF>{
     const {jsPDF}=await import('jspdf');
-    const pdf=new jsPDF({unit:'mm',format:'a4'}),left=14,width=182;
-    let y=17;
-    const line=()=>{pdf.setDrawColor(218,222,218);pdf.line(left,y,left+width,y);y+=4;};
-    const ensure=(height=8)=>{if(y+height>282){pdf.addPage();y=16;}};
-    const text=(value:string,size=9,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);const wrapped=pdf.splitTextToSize(value,width);ensure(wrapped.length*4.5);pdf.text(wrapped,left,y);y+=wrapped.length*4.5;};
-    text(this.workspace?.name||'SwarnaSuraksha',17,true);
-    text('SALES RECEIPT',10,true);
-    text(`Invoice #${sale.invoice_number}  |  ${new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'}).format(new Date(sale.created_at))}`);
-    text(`Customer: ${this.customerName(sale.customer_id)}${this.customerPhone(sale.customer_id)?`  |  Mobile: ${this.customerPhone(sale.customer_id)}`:''}`);
-    line();
-    text('NEW JEWELLERY',11,true);
-    for(const item of this.linesFor(sale.id)){
-      text(`${item.item_description} - ${item.metal.toUpperCase()}${item.purity?` ${item.purity}`:''}; ${item.net_weight_g} g x INR ${item.unit_rate_per_gram}/g; making INR ${item.making_charge}${item.making_charge_percent?` (${item.making_charge_percent}%)`:''}; taxable amount INR ${item.line_total}; GST INR ${item.gst_amount}; total INR ${this.fixed(this.lineGrossAmountMinor(item),2)}`);
-    }
-    if(!this.linesFor(sale.id).length)text('No item details available.');
-    if(this.exchangesFor(sale.id).length){
-      line();text('OLD JEWELLERY RECEIVED (EXCHANGE)',11,true);
-      for(const item of this.exchangesFor(sale.id))text(`${item.description} - ${item.metal.toUpperCase()} ${item.purity}; net ${item.net_weight_g} g; quality deduction ${item.quality_deduction_percent}%; accepted ${item.accepted_weight_g} g; rate INR ${item.applied_rate_per_gram}/g; credit INR ${item.exchange_value}`);
-    }
-    if(this.returnsFor(sale.id).length){
-      line();text('RETURNED ITEMS',11,true);
-      for(const returnedItem of this.returnsFor(sale.id)){
-        const description=this.lineForReturn(returnedItem)?.item_description||'Invoice item';
-        text(`${description}; reason: ${returnedItem.reason}; value INR ${returnedItem.original_line_amount}; refund INR ${returnedItem.cash_refund}`);
-      }
-    }
-    line();text('BILL SUMMARY',11,true);
-    text(`Taxable jewellery subtotal: INR ${sale.taxable_subtotal}`);
-    text(`GST (${sale.gst_percent}%): INR ${sale.gst_amount}`);
-    text(`New jewellery total: INR ${sale.subtotal}`);
-    text(`Exchange credit: INR ${formatFixed(this.exchangeTotalForSale(sale.id),2)}`);
+    const pdf=new jsPDF({unit:'mm',format:'a4'});
+    const dateLabel=(value:string)=>new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'}).format(new Date(value));
     const net=parseFixed(sale.subtotal,2)-this.exchangeTotalForSale(sale.id);
-    text(`Net after exchange: INR ${formatFixed(net>0n?net:0n,2)}`);
-    text(`Previous outstanding: INR ${sale.previous_outstanding||'0.00'}`);
-    text(`Total payable: INR ${sale.total_payable||sale.subtotal}`,10,true);
-    text(`Paid: INR ${sale.paid_total}  |  Balance due: INR ${this.balanceAmount(sale)}`);
-    for(const payment of this.paymentsFor(sale.id))text(`Payment: ${payment.method.toUpperCase()} INR ${payment.amount}${payment.reference?` · Ref ${payment.reference}`:''}`);
-    y+=2;line();text('GST is calculated at the rate saved on this invoice. Confirm business registration and applicable tax-invoice requirements before issuing this receipt as a formal GST invoice.',8);
-    text('Thank you for your business.',9,true);
+    renderReceiptPdf(pdf,{
+      business:this.workspace?.name||'Jewellery Business',invoiceNo:String(sale.invoice_number),dateLabel:dateLabel(sale.created_at),customer:this.customerName(sale.customer_id),mobile:this.customerPhone(sale.customer_id)||'',
+      lines:this.linesFor(sale.id).map(i=>({description:i.item_description,metal:i.metal,purity:i.purity||'',weightG:i.net_weight_g,rate:i.unit_rate_per_gram,making:i.making_charge,makingPct:i.making_charge_percent||'',taxable:i.line_total,gst:i.gst_amount,total:this.fixed(this.lineGrossAmountMinor(i),2)})),
+      exchanges:this.exchangesFor(sale.id).map(i=>({description:i.description,metal:i.metal,purity:i.purity,netG:i.net_weight_g,deductionPct:i.quality_deduction_percent,acceptedG:i.accepted_weight_g,rate:i.applied_rate_per_gram,credit:i.exchange_value})),
+      returns:this.returnsFor(sale.id).map(i=>({item:this.lineForReturn(i)?.item_description||'Invoice item',reason:i.reason,value:i.original_line_amount,refund:i.cash_refund})),
+      summary:{taxable:sale.taxable_subtotal,gstPercent:sale.gst_percent,gst:sale.gst_amount,newTotal:sale.subtotal,exchangeCredit:formatFixed(this.exchangeTotalForSale(sale.id),2),net:formatFixed(net>0n?net:0n,2),previous:sale.previous_outstanding||'0',totalPayable:sale.total_payable||sale.subtotal,paid:sale.paid_total,balance:this.balanceAmount(sale),returned:this.returned(sale.id),refunded:this.refunded(sale.id)},
+      payments:this.paymentsFor(sale.id).map(i=>({method:i.method,amount:i.amount,reference:i.reference||'',date:i.recorded_at?dateLabel(i.recorded_at):''})),
+      note:'GST is calculated at the saved invoice rate. Confirm applicable tax-invoice requirements before issuing this receipt as a formal GST invoice.'
+    });
     return pdf;
   }
   balance(sale:Sale):string{return this.inr(this.balanceAmount(sale));}

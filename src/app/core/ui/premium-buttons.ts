@@ -24,8 +24,8 @@ svg.btn-icon { width: 16px !important; height: 16px !important; max-width: 16px;
 .receipt-actions .text-btn, .receipt-actions .primary-btn { flex: 0 0 auto; white-space: nowrap; }
 
 /* ===== Page header button: stretches across the top bar ===== */
-.app-main .topbar .top-actions { flex: 1 1 auto !important; margin-left: 24px !important; gap: 12px; }
-.app-main .topbar .top-actions .primary-btn { flex: 1 1 0; min-height: 48px !important; font-size: 15px !important; }
+.app-main .topbar .top-actions { flex: 0 1 auto !important; margin-left: auto !important; gap: 12px; }
+.app-main .topbar .top-actions .primary-btn { flex: 0 0 auto; min-height: 40px !important; font-size: 15px !important; }
 
 /* ===== PRIMARY buttons: emerald + gold, full width ===== */
 .app-main .top-actions .primary-btn,
@@ -39,6 +39,7 @@ svg.btn-icon { width: 16px !important; height: 16px !important; max-width: 16px;
   transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
 }
 
+ .app-main .topbar .top-actions .primary-btn { width:auto !important; min-height:40px !important; padding: 0 18px !important; border-radius:10px !important; }
 /* ===== SAVE buttons (Save customer, Save supplier ...): solid gold ===== */
 .app-main .text-btn.btn-save,
 .app-main .payment-line > .btn-save {

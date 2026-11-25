@@ -20,7 +20,7 @@ type RGB = [number, number, number];
 interface Col { label: string; w: number; align: 'left' | 'right' | 'center'; }
 interface Cell { t: string; s?: string; b?: boolean; wrap?: boolean; color?: RGB; }
 
-const NAVY: RGB = [22, 32, 58];
+const NAVY: RGB = [43, 38, 30];
 const GOLD: RGB = [196, 154, 66];
 const CREAM: RGB = [252, 249, 242];
 const INK: RGB = [34, 40, 52];
@@ -230,34 +230,15 @@ export function renderReceiptPdf(pdf: jsPDF, d: ReceiptPdfData): void {
   if (isPositive(d.summary.returned)) sRows.push(['Returned items', `- ${money(d.summary.returned)}`]);
   if (isPositive(d.summary.refunded)) sRows.push(['Refunded', money(d.summary.refunded)]);
 
-  const pw = 82, px = R - pw;       // right summary card
-  const lw = W - pw - 8;            // left payments card
-  const payBlocks = d.payments.map(p => ({ p, ref: p.reference ? wrap(`Ref: ${p.reference}`, lw - 10, 7.5, false, 3) : [] as string[] }));
-  const leftH = 14 + (payBlocks.length ? payBlocks.reduce((n, b) => n + 9 + (b.p.date ? 3.8 : 0) + b.ref.length * 3.8 + 2, 0) : 8);
-  const rightH = 5 + sRows.length * 6.4 + 3 + 11 + 3 + 7 + 3 + 13 + 4;
-  const blockH = Math.max(leftH, rightH);
+  if(d.payments.length) table('Payment history','Amounts in INR',[
+    {label:'Date',w:48,align:'left'},{label:'Method',w:32,align:'left'},{label:'Reference',w:62,align:'left'},{label:'Amount',w:40,align:'right'}
+  ],d.payments.map(p=>[{t:p.date,wrap:true},{t:p.method.toUpperCase()},{t:p.reference||'-',wrap:true},{t:money(p.amount),b:true}]));
+  const pw = 112, px = R - pw;
+  const blockH = 5 + sRows.length * 6.4 + 3 + 11 + 3 + 7 + 3 + 13 + 8;
   ensure(blockH + 10);
   const top = y;
-
   fillC(CREAM); drawC(LINE); pdf.setLineWidth(0.3);
-  pdf.roundedRect(L, top, lw, blockH, 2, 2, 'FD');
   pdf.roundedRect(px, top, pw, blockH, 2, 2, 'FD');
-
-  txt('PAYMENT DETAILS', L + 5, top + 7, 7, true, GOLD);
-  let ly = top + 14;
-  if (!payBlocks.length) {
-    txt('No payment recorded.', L + 5, ly, 8.5, false, MUTED);
-  } else {
-    for (const { p, ref } of payBlocks) {
-      txt(p.method.toUpperCase(), L + 5, ly, 9, true, NAVY);
-      txt(`INR ${money(p.amount)}`, L + lw - 5, ly, 9, true, GREEN, 'right');
-      ly += 4.2;
-      if (p.date) { txt(p.date, L + 5, ly, 7, false, MUTED); ly += 3.8; }
-      for (const r of ref) { txt(r, L + 5, ly, 7.5, false, MUTED); ly += 3.8; }
-      ly += 3;
-    }
-  }
-
   let ry = top + 10;
   for (const [label, value] of sRows) {
     txt(label, px + 5, ry, 8.5, false, MUTED);
@@ -302,6 +283,7 @@ export function renderReceiptPdf(pdf: jsPDF, d: ReceiptPdfData): void {
     drawC(LINE); pdf.setLineWidth(0.25); pdf.line(L, PH - 14, R, PH - 14);
     txt(`${fit(d.business, 100, 7)}  ·  Invoice ${d.invoiceNo}`, L, PH - 9.5, 7, false, MUTED);
     txt(`Page ${p} of ${pages}`, R, PH - 9.5, 7, false, MUTED, 'right');
+    txt('SwarnaSuraksha | Developed by Suraksha Software | www.surakshasoftware.in', PW/2, PH-5.5, 7, false, MUTED, 'center');
     fillC(NAVY); pdf.rect(0, PH - 4, PW, 4, 'F');
     fillC(GOLD); pdf.rect(0, PH - 4, PW, 0.9, 'F');
   }

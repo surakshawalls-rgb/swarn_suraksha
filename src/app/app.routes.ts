@@ -7,8 +7,7 @@ import { WorkspaceShellComponent } from './features/dashboard/workspace-shell.co
 import { CustomersComponent } from './features/customers/customers.component';
 import { SalesComponent } from './features/sales/sales.component';
 import { GirviComponent } from './features/girvi/girvi.component';
-import { StockComponent } from './features/stock/stock.component';
-import { SuppliersComponent } from './features/suppliers/suppliers.component';
+import { StockWorkspaceComponent } from './features/stock/stock-workspace.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -23,8 +22,9 @@ export const routes: Routes = [
       { path: 'customers', component: CustomersComponent },
       { path: 'sales', component: SalesComponent },
       { path: 'girvi', component: GirviComponent },
-      { path: 'stock', component: StockComponent },
-      { path: 'suppliers', component: SuppliersComponent },
+      { path: 'stock', component: StockWorkspaceComponent },
+      { path: 'suppliers', pathMatch: 'full', redirectTo: 'stock/suppliers' },
+      { path: 'stock/suppliers', component: StockWorkspaceComponent, data: { suppliers: true } },
       { path: 'bill', pathMatch: 'full', redirectTo: 'sales' },
 
       // Legacy URLs redirect to Home. Their source files and database objects

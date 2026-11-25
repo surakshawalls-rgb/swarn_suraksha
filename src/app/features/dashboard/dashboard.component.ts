@@ -43,6 +43,20 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
             <span class="home-action-copy"><b>Create new girvi</b><small>Record a gold or silver pledge</small></span>
             <span class="home-action-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </a>
+          <a *ngIf="workspace?.role === 'owner' || workspace?.role === 'admin'" routerLink="/dashboard/stock" [queryParams]="{ action: 'add' }" class="home-action">
+            <span class="home-action-icon icon-gold" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 9 8-4.5M12 12 4 7.5M12 12v9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="home-action-copy"><b>Add stock</b><small>Record incoming jewellery items</small></span>
+            <span class="home-action-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </a>
+          <a *ngIf="workspace" routerLink="/dashboard/stock/suppliers" [queryParams]="{ action: 'add' }" class="home-action">
+            <span class="home-action-icon icon-green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m4-11v6m-3-3h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <span class="home-action-copy"><b>Add supplier</b><small>Save a supplier’s contact details</small></span>
+            <span class="home-action-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </a>
         </div>
       </section>
 

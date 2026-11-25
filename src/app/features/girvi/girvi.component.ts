@@ -484,7 +484,7 @@ export class GirviComponent implements OnInit, OnDestroy {
       const customer=result.data as Customer;
       this.customers=[...this.customers,customer];this.names.set(customer.id,customer.full_name);this.phones.set(customer.id,customer.phone??'');
       this.selectCustomer(customer);this.newCustomer={name:'',phone:'',address:''};
-    } catch(error) { this.customerError=error instanceof Error?error.message:'Could not register customer.'; }
+    } catch(error) { this.customerError=error instanceof Error?error.message:'Could not register customer.'; } finally { this.cdr.markForCheck(); }
   }
 
   async fetchRate(item:DraftCollateralItem): Promise<void> {
@@ -721,18 +721,17 @@ export class GirviComponent implements OnInit, OnDestroy {
     const {jsPDF}=await import('jspdf');
     const pdf=new jsPDF({unit:'mm',format:'a4'}),left=15,width=180;
     let y=18;
-    const ensure=(height=8):void=>{if(y+height>278){pdf.addPage();y=18;}};
+    const header=()=>{pdf.setFillColor(248,242,226);pdf.rect(0,0,210,38,'F');pdf.setFillColor(166,125,48);pdf.rect(0,38,210,1,'F');pdf.setFont('helvetica','bold');pdf.setFontSize(19);pdf.setTextColor(43,38,30);const name=workspace.name||'Jewellery Business';const names=pdf.splitTextToSize(name,180) as string[];pdf.text(names.slice(0,2),left,13);pdf.setFontSize(10);pdf.text(`GIRVI PLEDGE AGREEMENT | #${pledge.girvi_number}`,left,32);y=48;};
+    header();
+    const ensure=(height=8):void=>{if(y+height>274){pdf.addPage();header();}};
     const text=(value:string,size=9,bold=false,indent=0):void=>{
       pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);
       const lines=pdf.splitTextToSize(value,width-indent),lineHeight=size*0.48;
       ensure(lines.length*lineHeight+2);pdf.text(lines,left+indent,y);y+=lines.length*lineHeight+2;
     };
     const rule=():void=>{ensure(6);pdf.setDrawColor(210,218,211);pdf.line(left,y,left+width,y);y+=6;};
-    const section=(title:string):void=>{ensure(12);y+=2;text(title.toUpperCase(),10,true);};
+    const section=(title:string):void=>{ensure(18);pdf.setFillColor(241,235,219);pdf.rect(left,y-4,width,8,'F');y+=1;text(title.toUpperCase(),10,true);y+=2;};
     pdf.setTextColor(43,61,49);
-    text(this.workspace?.name||'Jewellery Business',18,true);
-    text(`GIRVI PLEDGE AGREEMENT  |  #${pledge.girvi_number}`,11,true);
-    rule();
     section('Customer and pledge');
     text(`Borrower: ${pledge.customer_name_snapshot||this.customerName(pledge.customer_id)}`,10,true);
     text(`Mobile: ${pledge.customer_phone_snapshot||this.customerPhone(pledge.customer_id)||'Not recorded'}`);
@@ -778,6 +777,8 @@ export class GirviComponent implements OnInit, OnDestroy {
       pdf.line(x,y,x+48,y);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text(label,x,y+5);
     }
     y+=18;text('Both parties should check this agreement before signing and keep a copy. Applicable local law governs.',8);
+    const pages=pdf.getNumberOfPages();
+    for(let page=1;page<=pages;page++){pdf.setPage(page);pdf.setDrawColor(166,125,48);pdf.line(left,281,left+width,281);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(90,85,75);pdf.text(`SwarnaSuraksha | Page ${page} of ${pages}`,left,286);pdf.text('Designed & developed by Suraksha Software | www.surakshasoftware.in',left,291);}
     pdf.setTextColor(0,0,0);
     return pdf;
   }

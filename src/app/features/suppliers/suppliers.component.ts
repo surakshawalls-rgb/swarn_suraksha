@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
@@ -21,14 +21,15 @@ interface SupplierPurchase { id:string; purchase_number:number; subtotal:string;
 interface SupplierPayment { purchase_id:string; amount:string; method:string; }
 
 @Component({
+  selector: 'ss-supplier-directory',
   standalone: true,
   imports: [CommonModule, FormsModule, IonicModule, RouterLink],
   template: `
     <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>›</span><b>Suppliers</b></div><div class="top-actions"><button class="primary-btn" type="button" (click)="startCreate()"><span>＋</span> Add supplier</button></div></header>
     <section class="content customers-page">
-      <div class="welcome"><div><p class="eyebrow">SUPPLIER DIRECTORY</p><h1>Suppliers</h1><p class="subtitle">Maintain supplier contacts and review their purchase history and balances.</p></div></div>
+      
       <div class="config-banner error-banner" *ngIf="!loading && errorMessage" role="alert"><span class="banner-icon">!</span><div><b>Supplier directory unavailable</b><p>{{errorMessage}}</p></div><button class="text-btn" type="button" (click)="load()">Retry</button></div>
-      <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Loading supplier records</b><p>Records are restricted to the selected business by row-level security.</p></div></div>
+      <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Loading supplier records</b></div></div>
       <section class="panel customer-editor" *ngIf="editing">
         <div class="panel-head"><div><h2>{{editId ? 'Edit supplier' : 'New supplier'}}</h2><p>Supplier financial records are retained if this profile is archived.</p></div><button class="text-btn" type="button" (click)="cancelEdit()">Cancel</button></div>
         <form class="customer-form" (ngSubmit)="save()">
@@ -42,13 +43,13 @@ interface SupplierPayment { purchase_id:string; amount:string; method:string; }
           <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !form.name.trim()">{{saving ? 'Checking and saving…' : duplicateSupplier ? 'Save as separate supplier' : 'Save supplier'}}</button><button *ngIf="duplicateSupplier" class="text-btn" type="button" (click)="cancelEdit()">Use existing supplier</button></div>
         </form>
       </section>
-      <section class="panel customer-editor" *ngIf="statementSupplier">
-        <div class="panel-head"><div><h2>Purchase statement · {{statementSupplier.name}}</h2><p>Latest 500 supplier invoices and linked settlements; totals below cover this displayed range.</p></div><div><button class="text-btn" type="button" (click)="exportStatement()" [disabled]="statementLoading || !statementPurchases.length">Export CSV</button><button class="text-btn" type="button" (click)="closeStatement()">Close</button></div></div>
+      <section class="panel customer-editor supplier-statement" *ngIf="statementSupplier">
+        <div class="panel-head"><div><h2>Account · {{statementSupplier.name}}</h2></div><div><button class="text-btn" type="button" (click)="exportStatement()" [disabled]="statementLoading || !!statementError || (!statementPurchases.length && !stockIntakes.length)">Export CSV</button><button class="text-btn" type="button" (click)="closeStatement()">Close</button></div></div>
         <div class="status-card" *ngIf="statementLoading"><span class="spinner"></span><div><b>Loading purchase statement</b><p>Reading supplier invoices and linked payments.</p></div></div>
         <div class="config-banner error-banner" *ngIf="!statementLoading && statementError" role="alert"><span class="banner-icon">!</span><div><b>Could not load purchase statement</b><p>{{statementError}}</p></div><button class="text-btn" type="button" (click)="openStatement(statementSupplier)">Retry</button></div>
-        <ng-container *ngIf="!statementLoading && !statementError"><div class="purchase-summary"><span>Purchases</span><b>{{statementInvoiced()}}</b><span>Paid</span><b>{{statementPaid()}}</b><span>Balance payable</span><b>{{statementOutstanding()}}</b></div>
+        <ng-container *ngIf="!statementLoading && !statementError"><h3>Stock account</h3><div class="purchase-summary"><span>Purchases</span><b>{{stockTotal(false)}}</b><span>Paid</span><b>{{stockTotal(true)}}</b><span>Balance payable</span><b>{{stockDue()}}</b></div><p *ngIf="!stockIntakes.length">No stock purchases yet.</p><section class="panel" *ngFor="let intake of stockIntakes"><h3>Purchase #{{intake.intake_number}} · {{intake.received_date}}</h3><p>Total {{money(intake.total_cost)}} · Paid {{money(intake.paid_total)}} · Due {{intakeDue(intake)}}</p><div class="table-wrap"><table><thead><tr><th>Item</th><th>Weight (g)</th><th>Cost</th><th>Status</th></tr></thead><tbody><tr *ngFor="let item of intake.items"><td>{{item.description}} · {{item.metal}}</td><td>{{item.weight_g}}</td><td>{{money(item.purchase_cost)}}</td><td>{{item.status | titlecase}}<small *ngIf="item.sold_date">To {{item.sold_to}} · {{item.sold_date}}</small><small *ngIf="item.returned_date">{{item.returned_date}}</small></td></tr></tbody></table></div><h4>Payment history</h4><p *ngIf="!intake.payments.length">No payments recorded.</p><div class="table-wrap"><table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let payment of intake.payments"><td>{{payment.payment_date}}</td><td>{{payment.method === 'bank_transfer' ? 'Bank transfer' : (payment.method | titlecase)}}</td><td>{{payment.reference || '—'}}</td><td>{{money(payment.amount)}}</td></tr></tbody></table></div></section><ng-container *ngIf="statementPurchases.length"><h3>Earlier purchases</h3><div class="purchase-summary"><span>Purchases</span><b>{{statementInvoiced()}}</b><span>Paid</span><b>{{statementPaid()}}</b><span>Balance payable</span><b>{{statementOutstanding()}}</b></div>
           <div class="table-wrap" *ngIf="statementPurchases.length; else noSupplierPurchases"><table><thead><tr><th>Purchase</th><th>Date</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Payment methods</th></tr></thead><tbody><tr *ngFor="let purchase of statementPurchases"><td>#{{purchase.purchase_number}}</td><td>{{purchase.created_at | date:'d MMM y, h:mm a':'Asia/Kolkata'}}</td><td>{{money(purchase.subtotal)}}</td><td>{{money(purchase.paid_total)}}</td><td>{{purchaseBalance(purchase)}}</td><td>{{paymentMethodsFor(purchase.id)}}</td></tr></tbody></table></div>
-          <ng-template #noSupplierPurchases><div class="empty-state"><b>No purchases recorded</b><p>Supplier purchases appear here after they are posted.</p></div></ng-template>
+          <ng-template #noSupplierPurchases></ng-template></ng-container>
         </ng-container>
       </section>      <section class="panel customer-list" *ngIf="!loading">
         <div class="customer-toolbar"><label class="search-field"><span>Search name, mobile or address</span><input [(ngModel)]="search" name="supplierSearch" (ngModelChange)="searchChanged()" placeholder="Search this business"></label><label class="archived-toggle"><input type="checkbox" [(ngModel)]="showArchived" name="includeArchived" (change)="page=0; load()"> Include archived</label></div>
@@ -58,7 +59,7 @@ interface SupplierPayment { purchase_id:string; amount:string; method:string; }
           </table>
         </div>
         <ng-template #emptySuppliers><div class="empty-state customer-empty"><span class="empty-art">◉</span><b>{{search ? 'No matching suppliers' : 'No suppliers yet'}}</b><p>{{search ? 'Try another name, mobile number or address.' : 'Add a supplier before recording purchase bills.'}}</p><button *ngIf="!search" class="text-btn" type="button" (click)="startCreate()">Add first supplier <span>→</span></button></div></ng-template>
-        <div class="list-footer" *ngIf="suppliers.length"><span>{{suppliers.length}} records shown · scoped by business RLS</span><div><button class="text-btn" type="button" (click)="previousPage()" [disabled]="page === 0">Previous</button><span>Page {{page + 1}}</span><button class="text-btn" type="button" (click)="nextPage()" [disabled]="suppliers.length < pageSize">Next</button></div></div>
+        <div class="list-footer" *ngIf="suppliers.length"><span>{{suppliers.length}} records shown</span><div><button class="text-btn" type="button" (click)="previousPage()" [disabled]="page === 0">Previous</button><span>Page {{page + 1}}</span><button class="text-btn" type="button" (click)="nextPage()" [disabled]="suppliers.length < pageSize">Next</button></div></div>
       </section>
     </section>
   `
@@ -78,6 +79,11 @@ export class SuppliersComponent implements OnInit, OnDestroy {
   editId: string | null = null;
   duplicateSupplier: Supplier | null = null;
   statementSupplier:Supplier|null=null;statementPurchases:SupplierPurchase[]=[];statementPayments=new Map<string,SupplierPayment[]>();statementLoading=false;statementError='';
+  stockIntakes:any[]=[];
+  private statementRequest=0;
+  stockTotal(paid:boolean):string{return this.money(formatFixed(this.stockIntakes.reduce((n,row)=>n+parseFixed(paid?row.paid_total:row.total_cost,2),0n),2));}
+  stockDue():string{return this.money(formatFixed(this.stockIntakes.reduce((n,row)=>n+parseFixed(row.total_cost,2)-parseFixed(row.paid_total,2),0n),2));}
+  intakeDue(row:any):string{return this.money(formatFixed(parseFixed(row.total_cost,2)-parseFixed(row.paid_total,2),2));}
   form = this.emptyForm();
   private workspaceSubscription: Subscription | null = null;
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -85,19 +91,30 @@ export class SuppliersComponent implements OnInit, OnDestroy {
 
   constructor(private readonly workspaceService: WorkspaceService, private readonly cdr: ChangeDetectorRef) {}
 
+  @Input() openCreateOnEntry = false;
+
   ngOnInit(): void {
+    let openCreate = this.openCreateOnEntry;
     this.workspaceSubscription = this.workspaceService.activeWorkspace$.subscribe(workspace => {
       if (workspace && workspace.id === this.workspace?.id && workspace.role === this.workspace?.role) return;
       const workspaceChanged=workspace?.id!==this.workspace?.id;
       this.loadRequestId++;
       this.workspace = workspace;
       if(workspaceChanged){this.suppliers=[];this.closeStatement();this.editing=false;this.editId=null;this.form=this.emptyForm();this.page=0;}
+      if (workspace && openCreate) {
+        queueMicrotask(() => {
+          if (!openCreate || this.workspaceSubscription?.closed || this.workspace !== workspace) return;
+          openCreate = false;
+          this.startCreate();
+          this.cdr.markForCheck();
+        });
+      }
       if(workspace)void this.load();
       else{this.loading=false;this.errorMessage='Select a business workspace.';this.cdr.markForCheck();}
     });
   }
 
-  ngOnDestroy(): void { this.workspaceSubscription?.unsubscribe(); this.loadRequestId++; if (this.searchTimer) clearTimeout(this.searchTimer); }
+  ngOnDestroy(): void { this.workspaceSubscription?.unsubscribe(); this.loadRequestId++; this.statementRequest++; if (this.searchTimer) clearTimeout(this.searchTimer); }
 
   searchChanged(): void {
     if (this.searchTimer) clearTimeout(this.searchTimer);
@@ -107,21 +124,38 @@ export class SuppliersComponent implements OnInit, OnDestroy {
 
   async openStatement(supplier:Supplier):Promise<void>{
     const client=this.workspaceService.client,workspace=this.workspace;
-    this.statementSupplier=supplier;this.statementPurchases=[];this.statementPayments.clear();this.statementLoading=true;this.statementError='';
+    const requestId=++this.statementRequest;this.stockIntakes=[];this.statementSupplier=supplier;this.statementPurchases=[];this.statementPayments.clear();this.statementLoading=true;this.statementError='';
     if(!client||!workspace){this.statementLoading=false;this.statementError='Supabase or the selected workspace is unavailable.';return;}
     this.cdr.markForCheck();
     try{
+      const readRows=async(table:string,columns:string,filter:string,value:string)=>{
+        const rows:any[]=[];
+        for(let offset=0;;offset+=200){
+          const controller=new AbortController();
+          const result=await this.withTimeout(client.from(table).select(columns).eq('business_id',workspace.id).eq(filter,value).order('id').range(offset,offset+199).abortSignal(controller.signal),'Loading stock statement',()=>controller.abort());
+          if(result.error)throw new Error(result.error.message);
+          const batch=result.data??[];rows.push(...batch);if(batch.length<200)return rows;
+        }
+      };
+      const intakes=await readRows('ss_stock_intakes','id,intake_number,received_date,total_cost,paid_total','supplier_id',supplier.id);
+      for(const intake of intakes){
+        if(requestId!==this.statementRequest)return;
+        [intake.items,intake.payments]=await Promise.all([readRows('ss_stock_items','id,description,metal,weight_g,purchase_cost,status,sold_to,sold_date,returned_date','intake_id',intake.id),readRows('ss_stock_payments','id,amount,method,payment_date,reference','intake_id',intake.id)]);
+        intake.payments.sort((a:any,b:any)=>a.payment_date.localeCompare(b.payment_date));
+      }
+      if(requestId!==this.statementRequest)return;
+      this.stockIntakes=intakes.sort((a,b)=>b.received_date.localeCompare(a.received_date));
       const purchasesController=new AbortController();
       const result=await this.withTimeout(client.from('ss_purchases').select('id,purchase_number,subtotal,paid_total,created_at').eq('business_id',workspace.id).eq('supplier_id',supplier.id).order('created_at',{ascending:false}).limit(500).abortSignal(purchasesController.signal),'Loading supplier purchases',()=>purchasesController.abort());
       if(result.error)throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);
       const purchases=(result.data??[]) as SupplierPurchase[];const ids=purchases.map(row=>row.id);
       const paymentsController=new AbortController();const paymentsResult=ids.length?await this.withTimeout(client.from('ss_purchase_payments').select('purchase_id,amount,method').eq('business_id',workspace.id).in('purchase_id',ids).abortSignal(paymentsController.signal),'Loading supplier payments',()=>paymentsController.abort()):{data:[],error:null};
       if(paymentsResult.error)throw new Error(`${paymentsResult.error.code??'Supabase'}: ${paymentsResult.error.message}`);
-      if(this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id){this.statementPurchases=purchases;for(const row of (paymentsResult.data??[]) as SupplierPayment[])this.statementPayments.set(row.purchase_id,[...(this.statementPayments.get(row.purchase_id)??[]),row]);}
-    }catch(error){if(this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id)this.statementError=error instanceof Error?error.message:'Could not load supplier statement.';}
-    finally{if(this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id){this.statementLoading=false;this.cdr.markForCheck();}}
+      if(requestId===this.statementRequest && this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id){this.statementPurchases=purchases;for(const row of (paymentsResult.data??[]) as SupplierPayment[])this.statementPayments.set(row.purchase_id,[...(this.statementPayments.get(row.purchase_id)??[]),row]);}
+    }catch(error){if(requestId===this.statementRequest && this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id)this.statementError=error instanceof Error?error.message:'Could not load supplier statement.';}
+    finally{if(requestId===this.statementRequest && this.statementSupplier?.id===supplier.id && this.workspace?.id===workspace.id){this.statementLoading=false;this.cdr.markForCheck();}}
   }
-  closeStatement():void{this.statementSupplier=null;this.statementPurchases=[];this.statementPayments.clear();this.statementError='';}
+  closeStatement():void{this.statementRequest++;this.stockIntakes=[];this.statementSupplier=null;this.statementPurchases=[];this.statementPayments.clear();this.statementError='';}
   paymentMethodsFor(id:string):string{return(this.statementPayments.get(id)??[]).map(row=>row.method).join(', ')||'Unpaid';}
   money(value:string):string{return formatInr(value,2);}
   purchaseBalance(row:SupplierPurchase):string{return this.money(formatFixed(parseFixed(row.subtotal,2)-parseFixed(row.paid_total,2),2));}
@@ -129,10 +163,11 @@ export class SuppliersComponent implements OnInit, OnDestroy {
   statementPaid():string{return formatInr(formatFixed(this.statementPurchases.reduce((n,row)=>n+parseFixed(row.paid_total,2),0n),2),2);}
   statementOutstanding():string{return formatInr(formatFixed(this.statementPurchases.reduce((n,row)=>n+parseFixed(row.subtotal,2)-parseFixed(row.paid_total,2),0n),2),2);}
   exportStatement():void{
-    const supplier=this.statementSupplier;if(!supplier||!this.statementPurchases.length)return;
+    const supplier=this.statementSupplier;if(!supplier)return;
     const headers=['Purchase','Date (IST)','Amount INR','Paid INR','Balance payable INR','Payment methods'];
     const rows=this.statementPurchases.map(row=>[row.purchase_number,new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'medium',timeZone:'Asia/Kolkata'}).format(new Date(row.created_at)),row.subtotal,row.paid_total,formatFixed(parseFixed(row.subtotal,2)-parseFixed(row.paid_total,2),2),this.paymentMethodsFor(row.id)]);
-    const csv=[headers,...rows].map(row=>row.map(value=>this.csvCell(value)).join(',')).join('\r\n');
+    const stockRows=this.stockIntakes.flatMap(row=>[[`Stock intake #${row.intake_number}`,row.received_date,row.total_cost,row.paid_total,formatFixed(parseFixed(row.total_cost,2)-parseFixed(row.paid_total,2),2),''],...row.payments.map((payment:any)=>[`Payment for intake #${row.intake_number}`,payment.payment_date,'',payment.amount,'',payment.method])]);
+    const csv=[headers,...stockRows,...rows].map(row=>row.map((value: unknown) => this.csvCell(value)).join(',')).join('\r\n');
     const blob=new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`supplier-statement-${supplier.id}.csv`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   private csvCell(value:unknown):string{const text=String(value??'');const safe=/^[\s\u0000-\u001f]*[=+\-@]/.test(text)?`'${text}`:text;return `"${safe.replace(/"/g,'""')}"`;}

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
@@ -26,13 +26,14 @@ type PendingAction=
   |{kind:'returned';key:string;itemId:string;reason:ReturnReason;note:string|null;returnedDate:string};
 
 @Component({
+  selector: 'ss-stock-register',
   standalone:true,
   imports:[CommonModule,FormsModule,IonicModule,RouterLink],
   template:`
-    <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>›</span><b>Stock</b></div><div class="top-actions"><button class="text-btn" type="button" (click)="load()" [disabled]="loading">Refresh</button><button *ngIf="canManage" class="primary-btn" type="button" (click)="toggleIntake()" [disabled]="pending?.kind!==undefined && pending?.kind!=='intake'"><span>＋</span> Add stock</button></div></header>
+    <header class="topbar"><div class="crumb"><a routerLink="/dashboard">Overview</a><span>›</span><b>Stock</b></div><div class="top-actions"><button class="text-btn" type="button" (click)="load()" [disabled]="loading">Refresh</button><button *ngIf="canManage" class="primary-btn" type="button" (click)="toggleIntake()" [disabled]="saving || (!!pending && pending.kind!=='intake') || !!paymentIntake || !!actionItem"><span>＋</span> Add stock</button></div></header>
     <section class="content customers-page stock-page">
-      <div class="welcome"><div><p class="eyebrow">INDIVIDUAL ITEM INVENTORY</p><h1>Stock</h1><p class="subtitle">Track each piece from manufacturer intake to sale or return. This stock ledger is separate from billing and purchase inventory.</p></div></div>
-      <div class="config-banner" role="note"><span class="banner-icon">i</span><div><b>Independent stock tracking</b><p>Items are added and sold individually. Marking stock sold does not create or change a customer bill. Returned pieces are removed from available stock and remain in the item history.</p></div></div>
+      
+
       <div class="config-banner error-banner" *ngIf="errorMessage" role="alert"><span class="banner-icon">!</span><div><b>Stock data unavailable</b><p>{{errorMessage}}</p></div><button class="text-btn" type="button" (click)="load()">Retry</button></div>
       <p class="save-success" *ngIf="successMessage" role="status">{{successMessage}}</p>
       <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Loading stock</b><p>Reading item records and available metal weights for this business.</p></div></div>
@@ -43,10 +44,10 @@ type PendingAction=
       </section>
 
       <section class="panel stock-intake-panel" *ngIf="intakeOpen">
-        <div class="stock-section-heading"><div><p class="eyebrow">MANUFACTURER INTAKE</p><h2>Add items to stock</h2><p>Each line is one individual item. Manufacturer payment can be made now or recorded later.</p></div><button class="text-btn" type="button" (click)="closeIntake()" [disabled]="saving">Cancel</button></div>
+        <div class="stock-section-heading"><div><p class="eyebrow">SUPPLIER INTAKE</p><h2>Add items to stock</h2><p></p></div><button class="text-btn" type="button" (click)="closeIntake()" [disabled]="saving">Cancel</button></div>
         <form class="stock-intake-form" (ngSubmit)="submitIntake()">
           <div class="stock-intake-meta">
-            <label>Manufacturer<select [(ngModel)]="supplierId" name="supplierId" required [disabled]="saving || !!pending"><option value="">Select manufacturer</option><option *ngFor="let supplier of suppliers" [value]="supplier.id" [disabled]="!supplier.is_active">{{supplier.name}}{{supplier.is_active?'':' (inactive)'}}</option></select><small *ngIf="!suppliers.length">Add a manufacturer in Suppliers before recording stock.</small></label>
+            <label>Supplier<select [(ngModel)]="supplierId" name="supplierId" required [disabled]="saving || !!pending"><option value="">Select supplier</option><option *ngFor="let supplier of activeSuppliers" [value]="supplier.id" [disabled]="!supplier.is_active">{{supplier.name}}{{supplier.is_active?'':' (inactive)'}}</option></select><small *ngIf="!activeSuppliers.length">Open the Suppliers tab above to add a supplier before recording stock.</small></label>
             <label>Date received<input type="date" [(ngModel)]="receivedDate" name="receivedDate" [max]="today" required [disabled]="saving || !!pending"></label>
           </div>
           <div class="stock-item-drafts">
@@ -61,7 +62,7 @@ type PendingAction=
             <button class="stock-add-line" type="button" (click)="addDraftItem()" [disabled]="draftItems.length>=100 || saving || !!pending">＋ Add another item</button>
           </div>
           <div class="stock-payment-box">
-            <div class="stock-section-heading"><div><h3>Manufacturer payment</h3><p>Leave amount at zero if this intake is unpaid. You can record one or more payments later.</p></div></div>
+            <div class="stock-section-heading"><div><h3>Supplier payment</h3><p></p></div></div>
             <div class="stock-payment-fields">
               <label>Paid now (₹)<input [(ngModel)]="initialPaid" name="initialPaid" inputmode="decimal" [disabled]="saving || !!pending"></label>
               <label>Method<select [(ngModel)]="initialPaymentMethod" name="initialPaymentMethod" [disabled]="saving || !!pending || !initialPaymentAmount"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label>
@@ -71,49 +72,49 @@ type PendingAction=
           </div>
           <div class="stock-intake-total"><span>{{draftItems.length}} item{{draftItems.length===1?'':'s'}} · total purchase price</span><b>{{money(draftTotal)}}</b></div>
           <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p>
-          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !canManage || !network.isOnline || !suppliers.length || !supplierId">{{saving? 'Saving stock…' : pending?.kind==='intake'?'Retry same intake safely':'Add to stock'}}</button><span>Items are recorded separately from sales bills.</span></div>
+          <div class="form-actions"><button class="primary-btn" type="submit" [disabled]="saving || !canManage || !network.isOnline || !activeSuppliers.length || !supplierId">{{saving? 'Saving stock…' : pending?.kind==='intake'?'Retry same intake safely':'Add to stock'}}</button><span></span></div>
         </form>
       </section>
 
       <section class="panel stock-list-panel" *ngIf="!loading && !errorMessage">
-        <div class="stock-section-heading"><div><p class="eyebrow">ITEM REGISTER</p><h2>Individual stock items</h2><p>Available pieces can be marked sold or returned. Sold and returned items stay in this register.</p></div><span class="stock-result-count">{{itemCount}} matching items</span></div>
+        <div class="stock-section-heading"><div><p class="eyebrow">ITEM REGISTER</p><h2>Stock register</h2><p></p></div><span class="stock-result-count">{{itemCount}} matching items</span></div>
         <div class="stock-filters">
           <label>Metal<select [(ngModel)]="metalFilter" name="metalFilter" (ngModelChange)="page=0;load()"><option value="">All metals</option><option value="gold">Gold</option><option value="silver">Silver</option></select></label>
           <label>Status<select [(ngModel)]="statusFilter" name="statusFilter" (ngModelChange)="page=0;load()"><option value="">All statuses</option><option value="available">Available</option><option value="sold">Sold</option><option value="returned">Returned</option></select></label>
         </div>
-        <div class="table-wrap stock-table-wrap" *ngIf="items.length;else emptyStock"><table class="stock-items-table"><thead><tr><th>Item</th><th>Metal / weight</th><th>Purchase price</th><th>Manufacturer</th><th>Payment</th><th>Status / details</th><th>Action</th></tr></thead><tbody>
+        <div class="table-wrap stock-table-wrap" *ngIf="items.length;else emptyStock"><table class="stock-items-table"><thead><tr><th>Item</th><th>Metal / weight</th><th>Purchase price</th><th>Supplier</th><th>Payment</th><th>Status / details</th><th>Action</th></tr></thead><tbody>
           <tr *ngFor="let item of items"><td class="stock-item-name"><b>{{item.description}}</b><small *ngIf="item.purity">{{item.purity}}</small><small>Intake #{{intakeFor(item.intake_id)?.intake_number || '—'}} · {{intakeFor(item.intake_id)?.received_date | date:'d MMM y':'Asia/Kolkata'}}</small></td>
             <td><span class="stock-metal-label" [class.gold-label]="item.metal==='gold'">{{item.metal | titlecase}}</span><b class="stock-weight">{{weight(item.weight_g)}} g</b></td>
             <td class="stock-price">{{money(item.purchase_cost)}}</td>
             <td>{{supplierName(intakeFor(item.intake_id)?.supplier_id)}}</td>
-            <td><span class="payment-status" [class.payment-paid]="paymentStatus(intakeFor(item.intake_id))==='Paid'" [class.payment-partial]="paymentStatus(intakeFor(item.intake_id))==='Part paid'">{{paymentStatus(intakeFor(item.intake_id))}}</span><small class="stock-payment-totals" *ngIf="intakeFor(item.intake_id) as intake">{{money(intake.paid_total)}} / {{money(intake.total_cost)}}</small><button *ngIf="canManage && hasOutstanding(intakeFor(item.intake_id))" class="stock-inline-action" type="button" (click)="openItemPayment(item)" [disabled]="saving">Record payment</button></td>
+            <td><span class="payment-status" [class.payment-paid]="paymentStatus(intakeFor(item.intake_id))==='Paid'" [class.payment-partial]="paymentStatus(intakeFor(item.intake_id))==='Part paid'">{{paymentStatus(intakeFor(item.intake_id))}}</span><small class="stock-payment-totals" *ngIf="intakeFor(item.intake_id) as intake">{{money(intake.paid_total)}} / {{money(intake.total_cost)}}</small><button *ngIf="intakeFor(item.intake_id)" class="stock-inline-action" type="button" (click)="openItemPayment(item)" [disabled]="saving">Purchase payments</button></td>
             <td><span class="item-status" [class.item-available]="item.status==='available'" [class.item-sold]="item.status==='sold'" [class.item-returned]="item.status==='returned'">{{item.status | titlecase}}</span><small *ngIf="item.status==='sold'">To {{item.sold_to}} · {{item.sold_date | date:'d MMM y':'Asia/Kolkata'}}</small><small *ngIf="item.status==='returned'">{{returnReasonLabel(item.return_reason)}} · {{item.returned_date | date:'d MMM y':'Asia/Kolkata'}}<span *ngIf="item.return_note"> · {{item.return_note}}</span></small></td>
             <td class="stock-row-actions"><ng-container *ngIf="item.status==='available' && canManage"><button class="stock-sold-action" type="button" (click)="openSold(item)" [disabled]="saving">Mark sold</button><button class="stock-return-action" type="button" (click)="openReturn(item)" [disabled]="saving">Mark returned</button></ng-container><span *ngIf="item.status!=='available'">—</span></td>
           </tr>
         </tbody></table></div>
-        <ng-template #emptyStock><div class="stock-empty"><span>◇</span><b>{{metalFilter||statusFilter?'No items match these filters':'No stock items yet'}}</b><p>{{metalFilter||statusFilter?'Change the filters to see other items.':'Add each manufacturer item to start tracking available gold and silver.'}}</p><button *ngIf="canManage && !metalFilter && !statusFilter" class="primary-btn" type="button" (click)="intakeOpen=true">Add your first stock item</button></div></ng-template>
-        <div class="list-footer"><span>Showing {{items.length}} of {{itemCount}} matching items · available weight excludes sold and returned items</span><div><button class="text-btn" type="button" (click)="previousPage()" [disabled]="page===0 || loading">Previous</button><span>Page {{page+1}}</span><button class="text-btn" type="button" (click)="nextPage()" [disabled]="(page+1)*pageSize>=itemCount || loading">Next</button></div></div>
+        <ng-template #emptyStock><div class="stock-empty"><span>◇</span><b>{{metalFilter||statusFilter?'No items match these filters':'No stock items yet'}}</b><p>{{metalFilter||statusFilter?'Change the filters to see other items.':'Add each supplier item to start tracking available gold and silver.'}}</p><button *ngIf="canManage && !metalFilter && !statusFilter" class="primary-btn" type="button" (click)="intakeOpen=true">Add your first stock item</button></div></ng-template>
+        <div class="list-footer"><span>Showing {{items.length}} of {{itemCount}} matching items</span><div><button class="text-btn" type="button" (click)="previousPage()" [disabled]="page===0 || loading">Previous</button><span>Page {{page+1}}</span><button class="text-btn" type="button" (click)="nextPage()" [disabled]="(page+1)*pageSize>=itemCount || loading">Next</button></div></div>
       </section>
     </section>
 
     <div class="stock-modal-backdrop" *ngIf="actionItem && (actionMode==='sold' || actionMode==='returned')" role="presentation" (click)="closeAction()">
       <section class="stock-modal" role="dialog" aria-modal="true" [attr.aria-label]="actionMode==='sold'?'Confirm item sold':'Confirm item returned'" (click)="$event.stopPropagation()">
-        <div class="stock-modal-heading"><span class="stock-modal-icon">{{actionMode==='sold'?'✓':'↩'}}</span><div><p class="eyebrow">{{actionMode==='sold'?'SALE CONFIRMATION':'MANUFACTURER RETURN'}}</p><h2>{{actionMode==='sold'?'Mark item as sold':'Mark item as returned'}}</h2><p><b>{{actionItem.description}}</b> · {{actionItem.metal | titlecase}} · {{weight(actionItem.weight_g)}} g</p></div></div>
+        <div class="stock-modal-heading"><span class="stock-modal-icon">{{actionMode==='sold'?'✓':'↩'}}</span><div><p class="eyebrow">{{actionMode==='sold'?'SALE CONFIRMATION':'SUPPLIER RETURN'}}</p><h2>{{actionMode==='sold'?'Mark item as sold (stock only)':'Mark item as returned'}}</h2><p><b>{{actionItem.description}}</b> · {{actionItem.metal | titlecase}} · {{weight(actionItem.weight_g)}} g</p></div></div>
         <form class="stock-modal-form" (ngSubmit)="submitItemAction()">
           <ng-container *ngIf="actionMode==='sold'"><label>Sold to<input [(ngModel)]="soldTo" name="soldTo" maxlength="160" required placeholder="Customer name"></label><label>Sale date<input type="date" [(ngModel)]="soldDate" name="soldDate" [min]="intakeFor(actionItem.intake_id)?.received_date" [max]="today" required></label></ng-container>
           <ng-container *ngIf="actionMode==='returned'"><label>Return reason<select [(ngModel)]="returnReason" name="returnReason" required><option value="defect">Defective item</option><option value="customer_disliked">Customer did not like it</option><option value="different_design">Customer wants a different design</option><option value="other">Other reason</option></select></label><label>Notes (optional)<textarea [(ngModel)]="returnNote" name="returnNote" maxlength="500" rows="3" placeholder="Add details about the return"></textarea></label><label>Return date<input type="date" [(ngModel)]="returnedDate" name="returnedDate" [min]="intakeFor(actionItem.intake_id)?.received_date" [max]="today" required></label></ng-container>
           <p class="stock-confirm-note">{{actionMode==='sold'?'This item will no longer count as available. This action does not create a bill.':'This item will be removed from available stock. The item and reason will remain in the register.'}}</p>
-          <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><div class="stock-modal-actions"><button class="text-btn" type="button" (click)="closeAction()" [disabled]="saving">Cancel</button><button class="primary-btn" type="submit" [disabled]="saving || !network.isOnline">{{saving?'Saving…':pending?.kind===actionMode?'Retry same action safely':actionMode==='sold'?'Confirm sold':'Confirm return'}}</button></div>
+          <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><div class="stock-modal-actions"><button class="text-btn" type="button" (click)="closeAction()" [disabled]="saving">Cancel</button><button class="primary-btn" type="submit" [disabled]="saving || !network.isOnline">{{saving?'Saving…':pending?.kind===actionMode?'Retry same action safely':actionMode==='sold'?'Confirm sale':'Confirm return'}}</button></div>
         </form>
       </section>
     </div>
 
     <div class="stock-modal-backdrop" *ngIf="paymentIntake" role="presentation" (click)="closePayment()">
-      <section class="stock-modal stock-payment-modal" role="dialog" aria-modal="true" aria-label="Record manufacturer payment" (click)="$event.stopPropagation()">
-        <div class="stock-modal-heading"><span class="stock-modal-icon">₹</span><div><p class="eyebrow">MANUFACTURER SETTLEMENT</p><h2>Record payment</h2><p>Intake #{{paymentIntake.intake_number}} · {{supplierName(paymentIntake.supplier_id)}}</p></div></div>
+      <section class="stock-modal stock-payment-modal" role="dialog" aria-modal="true" aria-label="Record supplier payment" (click)="$event.stopPropagation()">
+        <div class="stock-modal-heading"><span class="stock-modal-icon">₹</span><div><p class="eyebrow">SUPPLIER SETTLEMENT</p><h2>Purchase payments</h2><p>Intake #{{paymentIntake.intake_number}} · {{supplierName(paymentIntake.supplier_id)}}</p></div></div>
         <div class="stock-payment-balance"><span>Purchase total <b>{{money(paymentIntake.total_cost)}}</b></span><span>Paid so far <b>{{money(paymentIntake.paid_total)}}</b></span><span>Remaining <b>{{money(outstanding(paymentIntake))}}</b></span></div>
-        <div class="stock-payment-history" *ngIf="payments.length"><b>Payments recorded</b><div *ngFor="let payment of payments"><span>{{payment.payment_date | date:'d MMM y':'Asia/Kolkata'}} · {{payment.method | titlecase}}{{payment.reference?' · '+payment.reference:''}}</span><b>{{money(payment.amount)}}</b></div></div>
-        <form class="stock-modal-form" (ngSubmit)="submitPayment()"><label>Payment amount (₹)<input [(ngModel)]="paymentAmount" name="paymentAmount" inputmode="decimal" required></label><div class="stock-payment-fields"><label>Method<select [(ngModel)]="paymentMethod" name="paymentMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label><label>Payment date<input type="date" [(ngModel)]="paymentDate" name="paymentDate" [min]="paymentIntake.received_date" [max]="today" required></label></div><label>Reference (optional)<input [(ngModel)]="paymentReference" name="paymentReference" maxlength="120"></label>
+        <button class="text-btn" type="button" (click)="closePayment()" [disabled]="saving || historyLoading">Close history</button><p *ngIf="historyLoading">Loading payments…</p><div class="stock-payment-history" *ngIf="selectedPayments.length"><b>Payments recorded</b><div *ngFor="let payment of selectedPayments"><span>{{payment.payment_date | date:'d MMM y':'Asia/Kolkata'}} · {{payment.method | titlecase}}{{payment.reference?' · '+payment.reference:''}}</span><b>{{money(payment.amount)}}</b></div></div>
+        <form *ngIf="canManage && hasOutstanding(paymentIntake) && !historyLoading" class="stock-modal-form" (ngSubmit)="submitPayment()"><label>Payment amount (₹)<input [(ngModel)]="paymentAmount" name="paymentAmount" inputmode="decimal" required></label><div class="stock-payment-fields"><label>Method<select [(ngModel)]="paymentMethod" name="paymentMethod"><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="card">Card</option></select></label><label>Payment date<input type="date" [(ngModel)]="paymentDate" name="paymentDate" [min]="paymentIntake.received_date" [max]="today" required></label></div><label>Reference (optional)<input [(ngModel)]="paymentReference" name="paymentReference" maxlength="120"></label>
           <p class="form-error" *ngIf="formError" role="alert">{{formError}}</p><div class="stock-modal-actions"><button class="text-btn" type="button" (click)="closePayment()" [disabled]="saving">Close</button><button class="primary-btn" type="submit" [disabled]="saving || !network.isOnline">{{saving?'Saving…':pending?.kind==='payment'?'Retry same payment safely':'Save payment'}}</button></div>
         </form>
       </section>
@@ -128,20 +129,33 @@ export class StockComponent implements OnInit,OnDestroy {
   metalFilter:Metal|''='';statusFilter:ItemStatus|''='';page=0;itemCount=0;readonly pageSize=50;
   actionItem:StockItem|null=null;actionMode:'sold'|'returned'|null=null;soldTo='';soldDate=this.localDate();returnReason:ReturnReason='defect';returnNote='';returnedDate=this.localDate();
   paymentIntake:StockIntake|null=null;paymentAmount='';paymentMethod:PaymentMethod='cash';paymentDate=this.localDate();paymentReference='';
+  historyLoading=false;
   pending:PendingAction|null=null;
   readonly today=this.localDate();
   private subscription:Subscription|null=null;private requestId=0;
   private intakeMap=new Map<string,StockIntake>();private supplierMap=new Map<string,string>();
 
   constructor(private readonly workspaceService:WorkspaceService,readonly network:NetworkStatusService,private readonly cdr:ChangeDetectorRef){}
+  get activeSuppliers():Supplier[]{return this.suppliers.filter(row=>row.is_active);}
   get canManage():boolean{return this.workspace?.role==='owner'||this.workspace?.role==='admin';}
   get initialPaymentAmount():boolean{try{return parseFixed(this.initialPaid||'0',2)>0n;}catch{return false;}}
   get draftTotalMinor():bigint{return this.draftItems.reduce((sum,item)=>{try{return sum+parseFixed(item.purchase_cost||'0',2);}catch{return sum;}},0n);}
   get draftTotal():string{return formatFixed(this.draftTotalMinor,2);}
+  @Input() openCreateOnEntry = false;
+
   ngOnInit():void{
+    let openCreate = this.openCreateOnEntry;
     this.subscription=this.workspaceService.activeWorkspace$.subscribe(workspace=>{
       if(workspace&&workspace.id===this.workspace?.id&&workspace.role===this.workspace?.role)return;
-      this.workspace=workspace;this.requestId++;this.items=[];this.intakes=[];this.summary=[];this.pending=null;this.actionItem=null;this.paymentIntake=null;
+      this.workspace=workspace;this.requestId++;this.items=[];this.intakes=[];this.summary=[];this.pending=null;this.actionItem=null;this.paymentIntake=null;this.intakeOpen=false;this.page=0;this.draftItems=[this.emptyLine()];this.supplierId='';this.initialPaid='0.00';this.formError='';this.successMessage='';this.intakeMap.clear();this.supplierMap.clear();this.payments=[];
+      if (workspace && openCreate) {
+        queueMicrotask(() => {
+          if (!openCreate || this.subscription?.closed || this.workspace !== workspace) return;
+          openCreate = false;
+          if (this.canManage) this.toggleIntake();
+          this.cdr.markForCheck();
+        });
+      }
       if(workspace)void this.load();else{this.loading=false;this.errorMessage='Select a business workspace.';this.cdr.markForCheck();}
     });
   }
@@ -155,7 +169,7 @@ export class StockComponent implements OnInit,OnDestroy {
       if(this.metalFilter)itemQuery=itemQuery.eq('metal',this.metalFilter) as typeof itemQuery;
       if(this.statusFilter)itemQuery=itemQuery.eq('status',this.statusFilter) as typeof itemQuery;
       const [supplierResult,summaryResult,itemResult]=await Promise.all([
-        this.withTimeout(client.from('ss_suppliers').select('id,name,is_active').eq('business_id',workspace.id).order('name').abortSignal(controller.signal),'Loading manufacturers',()=>controller.abort()),
+        this.withTimeout(client.from('ss_suppliers').select('id,name,is_active').eq('business_id',workspace.id).order('name').abortSignal(controller.signal),'Loading suppliers',()=>controller.abort()),
         this.withTimeout(client.rpc('ss_stock_summary',{p_business_id:workspace.id}).abortSignal(controller.signal),'Loading available stock weights',()=>controller.abort()),
         this.withTimeout(itemQuery.range(this.page*this.pageSize,(this.page+1)*this.pageSize-1).abortSignal(controller.signal),'Loading stock items',()=>controller.abort())
       ]);
@@ -171,7 +185,7 @@ export class StockComponent implements OnInit,OnDestroy {
       if(intakeIds.length){
         const [intakeResult,paymentResult]=await Promise.all([
           this.withTimeout(client.from('ss_stock_intakes').select('id,business_id,supplier_id,intake_number,received_date,item_count,total_cost,paid_total').eq('business_id',workspace.id).in('id',intakeIds),'Loading stock intake details'),
-          this.withTimeout(client.from('ss_stock_payments').select('id,intake_id,amount,method,reference,payment_date,created_at').eq('business_id',workspace.id).in('intake_id',intakeIds).order('payment_date',{ascending:false}),'Loading manufacturer payments')
+          this.withTimeout(client.from('ss_stock_payments').select('id,intake_id,amount,method,reference,payment_date,created_at').eq('business_id',workspace.id).in('intake_id',intakeIds).order('payment_date',{ascending:false}),'Loading supplier payments')
         ]);
         if(intakeResult.error)throw new Error(`${intakeResult.error.code??'Supabase'}: ${intakeResult.error.message}`);
         if(paymentResult.error)throw new Error(`${paymentResult.error.code??'Supabase'}: ${paymentResult.error.message}`);
@@ -184,14 +198,14 @@ export class StockComponent implements OnInit,OnDestroy {
   }
   addDraftItem():void{if(this.draftItems.length<100)this.draftItems=[...this.draftItems,this.emptyLine()];}
   removeDraftItem(index:number):void{if(this.draftItems.length>1)this.draftItems=this.draftItems.filter((_,i)=>i!==index);}
-  toggleIntake():void{if(this.intakeOpen)this.closeIntake();else this.intakeOpen=true;}
+  toggleIntake():void{if(this.saving||this.actionItem||this.paymentIntake)return;if(this.intakeOpen)this.closeIntake();else{this.formError='';this.successMessage='';this.intakeOpen=true;}}
   closeIntake():void{if(this.saving)return;if(this.pending?.kind==='intake'){this.formError='Retry this intake to confirm its result before closing.';return;}this.intakeOpen=false;this.formError='';}
   async submitIntake():Promise<void>{
-    if(!this.canManage||this.saving)return;
+    if(!this.canManage||this.saving||(this.pending && this.pending.kind!=='intake'))return;
     if(!this.pending){
       try{
         if(!this.network.isOnline)throw new Error('You are offline. Reconnect before saving stock.');
-        if(!this.supplierId)throw new Error('Choose a manufacturer.');
+        if(!this.supplierId)throw new Error('Choose a supplier.');
         const items=this.draftItems.map((item,index)=>{
           const weight=parseFixed(item.weight_g,4),cost=parseFixed(item.purchase_cost,2);
           if(!item.description.trim())throw new Error(`Enter a name for item ${index+1}.`);
@@ -209,30 +223,35 @@ export class StockComponent implements OnInit,OnDestroy {
     await this.executePending();
   }
   async openPayment(intake:StockIntake):Promise<void>{
-    this.paymentIntake=intake;this.paymentAmount=this.money(formatFixed(parseFixed(intake.total_cost,2)-parseFixed(intake.paid_total,2),2));
+    if(this.saving||this.pending)return;
+    this.paymentIntake=intake;this.paymentAmount=formatFixed(parseFixed(intake.total_cost,2)-parseFixed(intake.paid_total,2),2);
     this.paymentMethod='cash';this.paymentDate=this.localDate();this.paymentReference='';this.formError='';this.pending=null;
-    this.payments=this.payments.filter(row=>row.intake_id===intake.id);
+    const client=this.workspaceService.client,workspace=this.workspace;
+    if(!client||!workspace)return;
+    this.historyLoading=true;this.cdr.markForCheck();
+    try{const rows:StockPayment[]=[];for(let offset=0;;offset+=200){const result=await this.withTimeout(client.from('ss_stock_payments').select('id,intake_id,amount,method,reference,payment_date,created_at').eq('business_id',workspace.id).eq('intake_id',intake.id).order('payment_date').order('id').range(offset,offset+199),'Loading payments');if(result.error)throw new Error(result.error.message);const batch=(result.data??[]) as StockPayment[];rows.push(...batch);if(batch.length<200)break;}if(this.paymentIntake?.id===intake.id&&this.workspace?.id===workspace.id)this.payments=[...this.payments.filter(row=>row.intake_id!==intake.id),...rows];}catch(error){this.formError=error instanceof Error?error.message:'Could not load payments.';}finally{this.historyLoading=false;this.cdr.markForCheck();}
   }
+  get selectedPayments():StockPayment[]{return this.payments.filter(row=>row.intake_id===this.paymentIntake?.id);}
   openItemPayment(item:StockItem):void{const intake=this.intakeFor(item.intake_id);if(intake)void this.openPayment(intake);}
-  closePayment():void{if(this.saving)return;if(this.pending?.kind==='payment'){this.formError='Retry this payment to confirm its result before closing.';return;}this.paymentIntake=null;this.formError='';}
+  closePayment():void{if(this.saving||this.historyLoading)return;if(this.pending?.kind==='payment'){this.formError='Retry this payment to confirm its result before closing.';return;}this.paymentIntake=null;this.formError='';}
   async submitPayment():Promise<void>{
-    if(!this.canManage||!this.paymentIntake||this.saving)return;
+    if(!this.canManage||!this.paymentIntake||this.saving||(this.pending && this.pending.kind!=='payment'))return;
     if(!this.pending){
       try{
         if(!this.network.isOnline)throw new Error('You are offline. Reconnect before recording a payment.');
         const amount=parseFixed(this.paymentAmount,2);
         if(amount<=0n)throw new Error('Payment amount must be positive.');
-        if(amount>parseFixed(this.outstanding(this.paymentIntake),2))throw new Error('Payment cannot exceed the remaining manufacturer balance.');
+        if(amount>parseFixed(this.outstanding(this.paymentIntake),2))throw new Error('Payment cannot exceed the remaining supplier balance.');
         this.pending={kind:'payment',key:crypto.randomUUID(),intakeId:this.paymentIntake.id,amount:formatFixed(amount,2),method:this.paymentMethod,paymentDate:this.paymentDate,reference:this.paymentReference.trim()||null};
       }catch(error){this.formError=error instanceof Error?error.message:'Check payment details.';return;}
     }
     await this.executePending();
   }
-  openSold(item:StockItem):void{this.actionItem=item;this.actionMode='sold';this.soldTo='';this.soldDate=this.localDate();this.formError='';this.pending=null;}
-  openReturn(item:StockItem):void{this.actionItem=item;this.actionMode='returned';this.returnReason='defect';this.returnNote='';this.returnedDate=this.localDate();this.formError='';this.pending=null;}
+  openSold(item:StockItem):void{if(this.saving||this.pending)return;this.actionItem=item;this.actionMode='sold';this.soldTo='';this.soldDate=this.localDate();this.formError='';this.pending=null;}
+  openReturn(item:StockItem):void{if(this.saving||this.pending)return;this.actionItem=item;this.actionMode='returned';this.returnReason='defect';this.returnNote='';this.returnedDate=this.localDate();this.formError='';this.pending=null;}
   closeAction():void{if(this.saving)return;if(this.pending?.kind==='sold'||this.pending?.kind==='returned'){this.formError='Retry this action to confirm its result before closing.';return;}this.actionItem=null;this.actionMode=null;this.formError='';}
   async submitItemAction():Promise<void>{
-    if(!this.canManage||!this.actionItem||!this.actionMode||this.saving)return;
+    if(!this.canManage||!this.actionItem||!this.actionMode||this.saving||(this.pending && this.pending.kind!==this.actionMode))return;
     if(!this.pending){
       try{
         if(!this.network.isOnline)throw new Error('You are offline. Reconnect before updating stock.');
@@ -255,19 +274,19 @@ export class StockComponent implements OnInit,OnDestroy {
       else if(action.kind==='payment')request=client.rpc('ss_stock_record_payment',{p_business_id:workspace.id,p_intake_id:action.intakeId,p_idempotency_key:action.key,p_amount:action.amount,p_method:action.method,p_payment_date:action.paymentDate,p_reference:action.reference});
       else if(action.kind==='sold')request=client.rpc('ss_stock_mark_sold',{p_business_id:workspace.id,p_stock_item_id:action.itemId,p_idempotency_key:action.key,p_sold_to:action.soldTo,p_sold_date:action.soldDate});
       else request=client.rpc('ss_stock_mark_returned',{p_business_id:workspace.id,p_stock_item_id:action.itemId,p_idempotency_key:action.key,p_reason:action.reason,p_note:action.note,p_returned_date:action.returnedDate});
-      const result=await this.withTimeout(request,`Saving ${action.kind}`,()=>controller.abort());
-      if(result.error){definitiveError=true;throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);}
+      const result=await this.withTimeout(request.abortSignal(controller.signal),`Saving ${action.kind}`,()=>controller.abort());
+      if(result.error){definitiveError=!!result.error.code && !/^(08|57|PGRST00)/.test(result.error.code);throw new Error(`${result.error.code??'Supabase'}: ${result.error.message}`);}
       if(!result.data)throw new Error('The database did not confirm the stock update. Retry the same action safely.');
       this.pending=null;
-      if(action.kind==='intake'){this.intakeOpen=false;this.draftItems=[this.emptyLine()];this.supplierId='';this.receivedDate=this.localDate();this.initialPaid='0.00';this.initialPaymentDate=this.localDate();this.initialPaymentReference='';this.successMessage='Stock intake and initial manufacturer payment saved.';}
-      else if(action.kind==='payment'){this.paymentIntake=null;this.successMessage='Manufacturer payment recorded.';}
+      if(action.kind==='intake'){this.intakeOpen=false;this.draftItems=[this.emptyLine()];this.supplierId='';this.receivedDate=this.localDate();this.initialPaid='0.00';this.initialPaymentDate=this.localDate();this.initialPaymentReference='';this.initialPaymentMethod='cash';this.page=0;this.statusFilter='';this.metalFilter='';this.successMessage='Stock intake and initial supplier payment saved.';}
+      else if(action.kind==='payment'){this.paymentIntake=null;this.successMessage='Supplier payment recorded.';}
       else{this.actionItem=null;this.actionMode=null;this.successMessage=action.kind==='sold'?'Item marked sold.':'Item marked returned and removed from available stock.';}
       await this.load();
     }catch(error){this.formError=error instanceof Error?error.message:'Could not save the stock update.';if(definitiveError)this.pending=null;}
     finally{this.saving=false;this.cdr.markForCheck();}
   }
   intakeFor(id:string):StockIntake|undefined{return this.intakeMap.get(id);}
-  supplierName(id:string|undefined):string{return id?this.supplierMap.get(id)??'Manufacturer unavailable':'—';}
+  supplierName(id:string|undefined):string{return id?this.supplierMap.get(id)??'Supplier unavailable':'—';}
   paymentStatus(intake:StockIntake|undefined):string{if(!intake)return'—';const paid=parseFixed(intake.paid_total,2),total=parseFixed(intake.total_cost,2);return paid===0n?'Unpaid':paid>=total?'Paid':'Part paid';}
   hasOutstanding(intake:StockIntake|undefined):boolean{return !!intake&&parseFixed(intake.paid_total,2)<parseFixed(intake.total_cost,2);}
   outstanding(intake:StockIntake):string{return formatFixed(parseFixed(intake.total_cost,2)-parseFixed(intake.paid_total,2),2);}
