@@ -11,7 +11,7 @@
   <section class="page-heading">
     <div class="heading-copy">
       <h2>Gold and silver market rates</h2>
-      <p class="subtitle">Nebula Metals Â· indicative Indian reference rates, excluding GST. Gold: Varanasi; silver: India.</p>
+      <p class="subtitle">Nebula Metals · indicative Indian reference rates, excluding GST. Gold: Varanasi; silver: India.</p>
     </div>
 
     <div class="heading-actions">
@@ -19,7 +19,7 @@
       <div class="status-chip" role="status">
         <span class="status-indicator" [class.is-busy]="fetching" [class.is-stale]="isStale || !snapshot || !!errorMessage"></span>
         <span>
-          {{ fetching ? 'Updating ratesâ€¦' : (latestQuoteTime ? 'Updated ' + (latestQuoteTime | date:'h:mm a':'+0530') : 'Nebula Metals') }}
+          {{ fetching ? 'Updating rates…' : (latestQuoteTime ? 'Updated ' + (latestQuoteTime | date:'h:mm a':'+0530') : 'Nebula Metals') }}
         </span>
       </div>
 
@@ -29,7 +29,7 @@
           <path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
           <path d="M5.5 9A7 7 0 0 1 17 5l3 2M4 17l3 2a7 7 0 0 0 11.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        {{ fetching ? 'Fetchingâ€¦' : 'Refresh rates' }}
+        {{ fetching ? 'Fetching…' : 'Refresh cached rates' }}
       </button>
       </div>
     </div>
@@ -41,14 +41,14 @@
     {{ snapshot?.automaticRefreshEnabled === false
       ? 'Automatic updates are paused.'
       : 'Market rates may be outdated.' }}
-    Confirm your shop rate before billing or girvi.
+    <span *ngIf="!personal">Confirm your shop rate before billing or girvi.</span>
   </span>
 </div>
   <!-- Error -->
   <section class="error-panel" *ngIf="errorMessage" role="alert">
     <div class="error-icon">!</div>
     <div class="error-copy">
-      <strong>Could not load market rates</strong>
+      <strong>{{ personal && errorMessage === 'Public market rates are not available yet.' ? 'Public rates are not published yet' : 'Could not load market rates' }}</strong>
       <p>{{ errorMessage }}</p>
     </div>
     <button type="button" class="retry-button" (click)="fetchGoldRates(true)" [disabled]="fetching">Try again</button>
@@ -64,7 +64,7 @@
   </section>
 
   <!-- Rate board: gold plates + silver plate in one grid -->
-  <section class="rate-board" [class.expanded-rates]="showOtherGoldRates" aria-label="Metal rates">
+  <section class="rate-board" [class.expanded-rates]="showOtherGoldRates" aria-label="Metal rates" *ngIf="snapshot">
     <article
       class="rate-card"
       *ngFor="let rate of rates; let i = index"
@@ -116,7 +116,7 @@
 
       <div class="price" *ngIf="silverRate !== null"><span class="currency-symbol">&#8377;</span>{{ formatRate(silverRate) }}</div>
       <div class="price price-empty" *ngIf="silverRate === null">
-        {{ silverFetching ? 'Fetchingâ€¦' : 'â€”' }}
+        {{ silverFetching ? 'Fetching…' : '—' }}
       </div>
       <div class="price-unit">per gram</div>
 
@@ -129,6 +129,7 @@
           <dt>1 bhar <small>({{ silverBharGrams }} g)</small></dt>
           <dd>&#8377;{{ formatRate(silverRate * silverBharGrams) }}</dd>
         </div>
+        <div><dt>1 kilogram</dt><dd>&#8377;{{ formatRate(silverRate * 1000) }}</dd></div>
       </dl>
 
       <p class="silver-error" *ngIf="silverErrorMessage" role="alert">{{ silverErrorMessage }}</p>

@@ -65,7 +65,7 @@ import { SupabaseService } from '../../core/supabase/supabase.service';
         <ul class="ss-features">
           <li>Gold and silver market rates</li>
           <li>Personal account access</li>
-          <li>Upcoming market notifications</li>
+          <li>Optional business registration</li>
         </ul>
 
         <div class="ss-personal-actions">
@@ -119,13 +119,13 @@ import { SupabaseService } from '../../core/supabase/supabase.service';
         </div>
 
         <h2>
-          {{register ? 'Create Your Account' : 'Business Access'}}
+          {{register ? 'Create Your Account' : 'Account Sign In'}}
         </h2>
 
         <p class="ss-description">
           {{register
-            ? 'Create an account to apply for business membership.'
-            : 'Manage your jewellery business securely.'}}
+            ? 'Create your personal account. You can apply for business access after signing in.'
+            : 'Sign in to your personal account or approved business workspace.'}}
         </p>
 
         <form (ngSubmit)="submit()"
@@ -173,6 +173,7 @@ import { SupabaseService } from '../../core/supabase/supabase.service';
           </button>
 
         </form>
+        <button type="button" class="ss-outline" *ngIf="!register" (click)="resend()" [disabled]="busy || !email">Resend verification email</button>
 
         <button type="button"
                 class="ss-outline"
@@ -181,12 +182,12 @@ import { SupabaseService } from '../../core/supabase/supabase.service';
 
           {{register
             ? 'Back to Sign In'
-            : 'Register Your Business'}}
+            : 'Create an Account'}}
 
         </button>
 
         <p class="ss-small">
-          Free business membership. Approval required.
+          Already have an account? Sign in first to register your business. Business approval is separate.
         </p>
 
       </section>
@@ -231,5 +232,6 @@ export class LoginComponent implements OnInit {
  async ngOnInit(){try{this.error=this.route.snapshot.queryParamMap.get('error_description')||''; await this.auth.initialize();if(this.auth.user) await this.router.navigateByUrl('/account');}catch(e){this.error=this.message(e);}}
  message(e:unknown){return (e as {message?:string})?.message||'Request failed';}
  async google(){this.busy=true;this.error='';try{await this.auth.signInWithGoogle();}catch(e){this.error=this.message(e);this.busy=false;}}
- async submit(){if(this.busy)return;this.busy=true;this.error='';this.notice='';try{if(this.register){const client=this.supabase.client;if(!client)throw new Error('Supabase is not configured');const {data,error}=await client.auth.signUp({email:this.email.trim(),password:this.password,options:{emailRedirectTo:new URL('/auth/callback',location.origin).toString()}});if(error)throw error;if(!data.session){this.notice='Check your email to confirm your account, then sign in with your password.';return;}}else await this.auth.signInWithPassword(this.email.trim(),this.password);await this.router.navigateByUrl('/account');}catch(e){this.error=this.message(e);}finally{this.password='';this.busy=false;}}
+ async submit(){if(this.busy)return;this.busy=true;this.error='';this.notice='';try{if(this.register){const client=this.supabase.client;if(!client)throw new Error('Supabase is not configured');const {data,error}=await client.auth.signUp({email:this.email.trim(),password:this.password,options:{emailRedirectTo:new URL('/auth/callback',location.origin).toString()}});if(error)throw error;if(!data.session){this.notice='Account registration submitted. Check your inbox and spam folder for the verification link, then sign in. If no email arrives, use Resend verification email.';this.register=false;return;}}else await this.auth.signInWithPassword(this.email.trim(),this.password);await this.router.navigateByUrl('/account');}catch(e){this.error=(e as {code?:string})?.code==='email_not_confirmed'?'Verify your email before signing in. Use Resend verification email if needed.':this.message(e);}finally{this.password='';this.busy=false;}}
+ async resend(){if(this.busy||!this.email.trim())return;this.busy=true;this.error='';this.notice='';try{const client=this.supabase.client;if(!client)throw new Error('Supabase is not configured');const {error}=await client.auth.resend({type:'signup',email:this.email.trim(),options:{emailRedirectTo:new URL('/auth/callback',location.origin).toString()}});if(error)throw error;this.notice='Verification request submitted. Check your inbox and spam folder.';}catch(e){this.error=this.message(e);}finally{this.busy=false;}}
 }

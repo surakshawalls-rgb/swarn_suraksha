@@ -32,7 +32,7 @@ export class AuthCallbackComponent implements OnInit {
       this.auth.cancelOAuthAttempt();
       this.errorMessage = providerError === 'access_denied'
         ? 'Google sign-in was canceled. You can try again.'
-        : `Google sign-in did not complete: ${providerError}`;
+        : `Authentication did not complete: ${providerError}`;
       this.message = 'Sign-in was not completed';
       await this.router.navigate(['/login'], { queryParams: { error_description: this.errorMessage } });
       return;
@@ -46,7 +46,7 @@ export class AuthCallbackComponent implements OnInit {
         } catch (error) {
           this.busy = false;
           this.profileSetupFailed = true;
-          this.message = 'Google sign-in succeeded, but profile setup needs attention.';
+          this.message = 'Sign-in succeeded, but profile setup needs attention.';
           this.errorMessage = error instanceof Error ? error.message : 'Could not save your user profile.';
           this.changeDetector.markForCheck();
         }
