@@ -10,36 +10,45 @@
   <!-- Heading + refresh -->
   <section class="page-heading">
     <div class="heading-copy">
-      <h2>Today’s gold and silver rates</h2>
-      <p class="subtitle">GoldAPI international spot quotes converted to rupees per gram. These are not Indian domestic bullion rates.</p>
+      <h2>Gold and silver market rates</h2>
+      <p class="subtitle">Nebula Metals Â· indicative Indian reference rates, excluding GST. Gold: Varanasi; silver: India.</p>
     </div>
 
     <div class="heading-actions">
       <div class="control-capsule">
       <div class="status-chip" role="status">
-        <span class="status-indicator" [class.is-busy]="fetching"></span>
+        <span class="status-indicator" [class.is-busy]="fetching" [class.is-stale]="isStale || !snapshot || !!errorMessage"></span>
         <span>
-          {{ fetching ? 'Updating rates…' : (latestQuoteTime ? 'Updated ' + (latestQuoteTime | date:'h:mm a':'Asia/Kolkata') : 'GoldAPI') }}
+          {{ fetching ? 'Updating ratesâ€¦' : (latestQuoteTime ? 'Updated ' + (latestQuoteTime | date:'h:mm a':'+0530') : 'Nebula Metals') }}
         </span>
       </div>
 
       <span class="capsule-divider" aria-hidden="true"></span>
-      <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="fetching || !workspace">
+      <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" title="Reload stored market rates without requesting new provider prices" [disabled]="fetching || !canRefresh">
         <svg class="refresh-icon" [class.spinning]="fetching" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M20 7v5h-5M4 17v-5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
           <path d="M5.5 9A7 7 0 0 1 17 5l3 2M4 17l3 2a7 7 0 0 0 11.5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        {{ fetching ? 'Fetching…' : 'Refresh rates' }}
+        {{ fetching ? 'Fetchingâ€¦' : 'Refresh rates' }}
       </button>
       </div>
     </div>
   </section>
 
+  <div class="market-warning" *ngIf="isStale" role="status">
+  <span class="warning-dot"></span>
+  <span>
+    {{ snapshot?.automaticRefreshEnabled === false
+      ? 'Automatic updates are paused.'
+      : 'Market rates may be outdated.' }}
+    Confirm your shop rate before billing or girvi.
+  </span>
+</div>
   <!-- Error -->
   <section class="error-panel" *ngIf="errorMessage" role="alert">
     <div class="error-icon">!</div>
     <div class="error-copy">
-      <strong>Could not load gold rates</strong>
+      <strong>Could not load market rates</strong>
       <p>{{ errorMessage }}</p>
     </div>
     <button type="button" class="retry-button" (click)="fetchGoldRates(true)" [disabled]="fetching">Try again</button>
@@ -49,13 +58,13 @@
   <section class="loading-panel" *ngIf="fetching && rates.length === 0">
     <div class="loading-spinner"></div>
     <div>
-      <strong>Fetching gold prices</strong>
-      <p>Please wait while we get the latest quotes.</p>
+      <strong>Loading market rates</strong>
+      <p>Retrieving stored gold and silver rates.</p>
     </div>
   </section>
 
   <!-- Rate board: gold plates + silver plate in one grid -->
-  <section class="rate-board" aria-label="Metal rates">
+  <section class="rate-board" [class.expanded-rates]="showOtherGoldRates" aria-label="Metal rates">
     <article
       class="rate-card"
       *ngFor="let rate of rates; let i = index"
@@ -72,19 +81,19 @@
         <span class="purity-badge">{{ rate.purity }}</span>
       </div>
 
-      <h3>{{ rate.purity }} gold</h3>
+      <h3>{{ rate.purity }} gold <small *ngIf="rate.purity === '20K'">(calculated)</small></h3>
 
-      <div class="price"><span class="currency-symbol">₹</span>{{ formatRate(rate.rate) }}</div>
+      <div class="price"><span class="currency-symbol">&#8377;</span>{{ formatRate(rate.rate) }}</div>
       <div class="price-unit">per gram</div>
 
       <dl class="rate-breakdown">
         <div>
           <dt>10 gram</dt>
-          <dd>₹{{ formatRate(rate.rate * 10) }}</dd>
+          <dd>&#8377;{{ formatRate(rate.rate * 10) }}</dd>
         </div>
         <div>
           <dt>1 bhar <small>({{ silverBharGrams }} g)</small></dt>
-          <dd>₹{{ formatRate(rate.rate * silverBharGrams) }}</dd>
+          <dd>&#8377;{{ formatRate(rate.rate * silverBharGrams) }}</dd>
         </div>
       </dl>
 
@@ -99,26 +108,26 @@
       <div class="card-top">
         <div class="purity-icon silver-symbol" aria-hidden="true">Ag</div>
         <span class="purity-badge" *ngIf="silverFetching">Updating</span>
-        <span class="purity-badge" *ngIf="!silverFetching && silverRate !== null">Live</span>
+        <span class="purity-badge" *ngIf="!silverFetching && silverRate !== null">Cached</span>
         <span class="purity-badge" *ngIf="!silverFetching && silverRate === null && silverErrorMessage">Unavailable</span>
       </div>
 
       <h3>Silver</h3>
 
-      <div class="price" *ngIf="silverRate !== null"><span class="currency-symbol">₹</span>{{ formatRate(silverRate) }}</div>
+      <div class="price" *ngIf="silverRate !== null"><span class="currency-symbol">&#8377;</span>{{ formatRate(silverRate) }}</div>
       <div class="price price-empty" *ngIf="silverRate === null">
-        {{ silverFetching ? 'Fetching…' : '—' }}
+        {{ silverFetching ? 'Fetchingâ€¦' : 'â€”' }}
       </div>
       <div class="price-unit">per gram</div>
 
       <dl class="rate-breakdown" *ngIf="silverRate !== null">
         <div>
           <dt>10 gram</dt>
-          <dd>₹{{ formatRate(silverRate * 10) }}</dd>
+          <dd>&#8377;{{ formatRate(silverRate * 10) }}</dd>
         </div>
         <div>
           <dt>1 bhar <small>({{ silverBharGrams }} g)</small></dt>
-          <dd>₹{{ formatRate(silverRate * silverBharGrams) }}</dd>
+          <dd>&#8377;{{ formatRate(silverRate * silverBharGrams) }}</dd>
         </div>
       </dl>
 
@@ -126,29 +135,60 @@
 
       <div class="card-footer">
         <span>Market reference</span>
-        <span *ngIf="silverFetchedAt">{{ silverFetchedAt | date:'h:mm a':'Asia/Kolkata' }}</span>
+        <span *ngIf="silverFetchedAt">{{ silverFetchedAt | date:'h:mm a':'+0530' }}</span>
         <span *ngIf="!silverFetchedAt">INR / g</span>
       </div>
     </article>
   </section>
 
   <button
-    *ngIf="!showOtherGoldRates"
+    *ngIf="snapshot"
     class="text-btn more-rates"
     type="button"
     (click)="loadOtherGoldRates()"
-    [disabled]="fetching || !workspace"
+    [disabled]="fetching || !canRefresh"
   >
-    View other gold rates
+    {{ showOtherGoldRates ? 'Hide other gold rates' : 'View other gold rates' }}
   </button>
+
+  
+  <section class="market-update-bar" *ngIf="snapshot">
+    <div class="market-update-item">
+      <span class="update-label">Last updated (IST)</span>
+      <strong>{{ latestQuoteTime | date:'dd MMM yyyy, h:mm a':'+0530' }}</strong>
+    </div>
+
+    <div class="market-update-item">
+      <span class="update-label">Automatic refresh</span>
+      <strong
+        [class.update-paused]="snapshot.automaticRefreshEnabled === false">
+        {{ snapshot.automaticRefreshEnabled === true
+          ? '9 AM & 1 PM IST'
+          : (snapshot.automaticRefreshEnabled === false
+            ? 'Currently paused'
+            : 'Status unavailable') }}
+      </strong>
+    </div>
+
+    <div class="market-update-item"
+         *ngIf="snapshot.automaticRefreshEnabled === true">
+      <span class="update-label">Next scheduled refresh</span>
+      <strong>{{ nextScheduledRefresh | date:'dd MMM, h:mm a':'+0530' }} IST</strong>
+    </div>
+
+    <div class="market-update-item">
+      <span class="update-label">Rate source</span>
+      <strong>Nebula Metals</strong>
+    </div>
+  </section>
 
   <!-- Empty state -->
   <section class="empty-panel" *ngIf="!fetching && rates.length === 0 && !errorMessage">
-    <div class="empty-icon">₹</div>
+    <div class="empty-icon">&#8377;</div>
     <h2>Your gold rates will appear here</h2>
     <p>Fetch the latest 24K gold and silver market quotes.</p>
-    <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="!workspace">
-      Fetch live rates
+    <button class="refresh-button" type="button" (click)="fetchGoldRates(true)" [disabled]="!canRefresh">
+      Load stored rates
     </button>
   </section>
 
@@ -161,9 +201,12 @@
       </svg>
     </div>
     <p>
-      GoldAPI supplies international spot quotes converted to INR. Import duties, GST and Indian domestic premiums are not added; these rates are not domestic bullion prices. They are separate from shop buying and selling rates. Refreshing does not change your bills or records.
+      Indicative market rates excluding GST.
+20K gold is calculated; silver purity is not independently verified.
+Shop buying and selling rates may differ.
+Refreshing does not change existing bills.
       <span class="quote-time" *ngIf="latestQuoteTime">
-        Last retrieved {{ latestQuoteTime | date:'d MMM y, h:mm:ss a':'Asia/Kolkata' }}.
+        Cache updated {{ latestQuoteTime | date:'d MMM y, h:mm:ss a':'+0530' }}.
       </span>
     </p>
   </section>

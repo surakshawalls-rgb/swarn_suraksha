@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, businessGuard } from './core/auth/auth.guard';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LoginComponent } from './features/login/login.component';
 import { AuthCallbackComponent } from './features/login/auth-callback.component';
@@ -10,13 +10,16 @@ import { GirviComponent } from './features/girvi/girvi.component';
 import { StockWorkspaceComponent } from './features/stock/stock-workspace.component';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
+  { path: 'account', canActivate: [authGuard], loadComponent: () => import('./features/login/account.component').then(m => m.AccountComponent) },
+  { path: 'personal', loadComponent: () => import('./features/login/personal.component').then(m => m.PersonalComponent) },
   { path: 'login', component: LoginComponent },
   { path: 'auth/callback', component: AuthCallbackComponent },
   {
     path: 'dashboard',
     component: WorkspaceShellComponent,
-    canActivate: [authGuard],
+    canActivate: [businessGuard],
+    canActivateChild: [businessGuard],
     children: [
       { path: '', pathMatch: 'full', component: DashboardComponent },
       { path: 'customers', component: CustomersComponent },
@@ -39,5 +42,5 @@ export const routes: Routes = [
       { path: '**', redirectTo: '' }
     ]
   },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: 'login' }
 ];

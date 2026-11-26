@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Centralized contract for the tables currently used by the client.
  * Refresh from the hosted schema before extending it; do not copy the local
  * foundation migration blindly because live business_members lacks is_active.
@@ -8,6 +8,10 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      ss_business_applications: {
+        Row: { id: string; business_name: string; status: string; rejection_reason: string | null; created_at: string };
+        Insert: never; Update: never; Relationships: [];
+      };
       user_profiles: {
         Row: { user_id: string; display_name: string | null; mobile_number: string | null; created_at: string; updated_at: string };
         Insert: { user_id: string; display_name?: string | null; mobile_number?: string | null; created_at?: string; updated_at?: string };
@@ -171,6 +175,16 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      ss_get_account_access: { Args: Record<string, never>; Returns: Json };
+      ss_get_authentication_status: { Args: Record<string, never>; Returns: Json };
+      ss_complete_legacy_password_migration: { Args: { p_business_id: string }; Returns: Json };
+      ss_submit_business_application: { Args: { p_details: Json }; Returns: string };
+      ss_cancel_business_application: { Args: { p_application_id: string }; Returns: boolean };
+      ss_approve_business_application: { Args: { p_application_id: string }; Returns: string };
+      ss_reject_business_application: { Args: { p_application_id: string; p_reason: string }; Returns: boolean };
+      ss_admin_list_businesses: { Args: Record<string, never>; Returns: Json };
+      ss_admin_set_business_status: { Args: { p_business_id: string; p_new_status: string; p_reason: string }; Returns: Json };
+
       create_business: {
         Args: { p_business_name: string; p_owner_contact_name?: string | null; p_mobile_number?: string | null; p_address?: string | null; p_city?: string | null; p_state?: string | null; p_postal_code?: string | null };
         Returns: string;

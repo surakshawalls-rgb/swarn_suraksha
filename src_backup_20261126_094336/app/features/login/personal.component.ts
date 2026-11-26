@@ -1,0 +1,2 @@
+import {Component} from '@angular/core';import {RouterLink} from '@angular/router';
+@Component({standalone:true,imports:[RouterLink],styleUrls:['./account.scss'],template:`<main class="access-page"><section class="access-card"><h1>Gold &amp; silver market</h1><p>Public market rates are not yet connected. No live price is available on this screen.</p><a routerLink="/login">Sign in or register</a> · <a routerLink="/account">Account center</a></section></main>`})export class PersonalComponent{}

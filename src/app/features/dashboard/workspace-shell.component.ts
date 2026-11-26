@@ -53,7 +53,7 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
           <a routerLink="/dashboard/girvi" routerLinkActive="selected"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg><span>Girvi</span></a>
           <a routerLink="/dashboard/stock" routerLinkActive="selected"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5ZM4 8.5V17l8 4 8-4V8.5M12 13v8M8 6.2l8 4.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg><span>Stock</span></a>
         </nav>
-        <div class="shell-user"><span class="avatar">{{initials}}</span><span><b>{{userName}}</b><small>Signed in securely</small></span><button type="button" (click)="signOut()" [disabled]="busy">Sign out</button></div>
+        <a routerLink="/account" style="color:inherit;padding:12px">Account &amp; security</a><div class="shell-user"><span class="avatar">{{initials}}</span><span><b>{{userName}}</b><small>Signed in securely</small></span><button type="button" (click)="signOut()" [disabled]="busy">Sign out</button></div>
       </aside>
       <main class="app-main"><div class="config-banner error-banner" *ngIf="!(network.online$ | async)" role="alert"><span class="banner-icon">!</span><div><b>You are offline</b><p>Financial posting is disabled until the connection returns. An interrupted request may still have reached Supabase; retry it using the same idempotency-safe action.</p></div></div><div class="workspace-prompt" *ngIf="workspaces.length > 1 && !activeWorkspace" role="status"><b>Select a business workspace</b><span>Choose one above to load tenant-scoped records.</span></div><router-outlet /><div class="developer-credit"><span>Designed &amp; developed by</span><a href="https://www.surakshasoftware.in/" target="_blank" rel="noopener noreferrer">Suraksha Software</a></div></main>
     </div>
@@ -65,15 +65,7 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
         <div class="status-card" *ngIf="loading"><span class="spinner"></span><div><b>Checking your workspace</b><p>Verifying your membership with Supabase…</p></div></div>
         <div class="status-card error" *ngIf="!loading && errorMessage"><span class="status-symbol">!</span><div><b>Workspace check needs attention</b><p>{{errorMessage}}</p><button class="inline-button" type="button" (click)="load()">Try again</button></div></div>
         <section class="onboarding-card" *ngIf="!loading && !errorMessage && workspaces.length === 0">
-          <span class="onboard-icon" aria-hidden="true">+</span><p class="eyebrow">GET STARTED</p><h1>Create your business workspace</h1>
-          <p class="onboard-copy">Your workspace starts empty and belongs to your business. You’ll be added as its owner.</p>
-          <form (ngSubmit)="createWorkspace()">
-            <label>Business name <input [(ngModel)]="businessName" name="businessName" required minlength="2" maxlength="160" autocomplete="organization" placeholder="e.g. Swarna Jewellers"></label>
-            <label>Owner or contact name <input [(ngModel)]="contactName" name="contactName" autocomplete="name" placeholder="Your name"></label>
-            <div class="field-row"><label>City <input [(ngModel)]="city" name="city" placeholder="City"></label><label>State <input [(ngModel)]="state" name="state" placeholder="State"></label></div>
-            <p class="form-error" *ngIf="onboardingError" role="alert">{{onboardingError}}</p>
-            <button class="create-button" type="submit" [disabled]="busy || businessName.trim().length < 2">{{busy ? 'Creating workspace…' : 'Create workspace'}}</button>
-          </form>
+          <h1>No authorized workspace</h1><p>Apply for a business account or check your access status.</p><a routerLink="/account">Open account center</a>
         </section>
       </section>
     </main>
@@ -191,28 +183,6 @@ export class WorkspaceShellComponent implements OnInit, OnDestroy {
     if (!workspace) return;
     this.activeWorkspace = workspace;
     this.workspace.setActiveWorkspace(workspace);
-  }
-
-  async createWorkspace(): Promise<void> {
-    const businessName = this.businessName.trim();
-    if (businessName.length < 2 || this.busy) return;
-    this.busy = true;
-    this.onboardingError = '';
-    try {
-      await this.workspace.createWorkspace({
-        businessName,
-        contactName: this.contactName,
-        mobile: this.auth.user?.phone ?? '',
-        city: this.city,
-        state: this.state
-      });
-      await this.load();
-    } catch (error) {
-      this.onboardingError = error instanceof Error ? error.message : 'Could not create the workspace.';
-    } finally {
-      this.busy = false;
-      this.cdr.markForCheck();
-    }
   }
 
   async signOut(): Promise<void> {

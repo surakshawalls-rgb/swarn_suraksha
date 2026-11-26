@@ -1,0 +1,2 @@
+import {Component} from '@angular/core';import {RouterLink} from '@angular/router';import {RatesComponent} from '../rates/rates.component';
+@Component({standalone:true,imports:[RouterLink,RatesComponent],styleUrls:['./account.scss'],template:`<main><app-rates [personal]="true" [embedded]="true"/><section class="access-card"><a routerLink="/login">Sign in or register</a> · <a routerLink="/account">Account center</a></section></main>`})export class PersonalComponent{}

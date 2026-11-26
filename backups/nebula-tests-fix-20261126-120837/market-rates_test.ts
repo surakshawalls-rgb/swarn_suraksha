@@ -1,0 +1,11 @@
+import { normalizeNebula, getIndianMarketDate, MarketRateError } from './market-rates.ts';
+function fixture(metal: 'gold'|'silver'): any {
+  const now = new Date(Date.now()-60000);
+  const price = (base:number,gst:number) => ({basePricePerGram:base,gstAmountPerGram:gst,finalPricePerGram:base+gst,pricePerGram:base+gst,currency:'INR'});
+  return {success:true,market:'Indian Market',city:'Varanasi',date:getIndianMarketDate(now),timestamp:new Date().toISOString(),prices:metal==='gold'?{gold24k:price(14162,424),gold22k:price(12982,389),gold18k:price(10621,319),gold14k:price(8284,249)}:{silver:price(220.24,6.61)},metadata:{confidence:'medium',validation_passed:true,last_verified_against_market:now.getTime(),last_verified_against_market_iso:now.toISOString(),...(metal==='gold'?{source_details:{engine:{stale:false,rate_type:'live'}}}:{})}};
+}
+function assert(ok:unknown){if(!ok)throw new Error('Assertion failed');}
+Deno.test('gold and calculated 20K',()=>{const r=normalizeNebula(fixture('gold'),'gold','Varanasi');assert(r.length===5&&r[0].base_price_per_gram===14162&&r[4].base_price_per_gram===11801.67);});
+Deno.test('silver without engine',()=>{const r=normalizeNebula(fixture('silver'),'silver','Varanasi');assert(r.length===1&&r[0].market_city==='India'&&r[0].base_price_per_gram===220.24);});
+Deno.test('ISO fallback',()=>{const f=fixture('silver');delete f.metadata.last_verified_against_market;assert(normalizeNebula(f,'silver','Varanasi').length===1);});
+for(const [name,mutate] of Object.entries({low: (f:any): void =>f.metadata.confidence='low',stale:(f:any)=>{f.metadata.last_verified_against_market=Date.now()-31*60000;delete f.metadata.last_verified_against_market_iso;},currency: (f:any): void =>f.prices.gold24k.currency='USD',gst: (f:any): void =>f.prices.gold24k.gstAmountPerGram=1,city: (f:any): void =>f.city='Chennai',date: (f:any): void =>f.date='2000-01-01',validation:(f:any)=>delete f.metadata.validation_passed,engine:(f:any)=>delete f.metadata.source_details,daily: (f:any): void =>f.metadata.source_details.engine.rate_type='daily',success: (f:any): void =>f.success=false})) Deno.test(`reject ${name}`,()=>{const f=fixture('gold');mutate(f);try{normalizeNebula(f,'gold','Varanasi');}catch(e){assert(e instanceof MarketRateError);return;}throw new Error('Invalid fixture accepted');});

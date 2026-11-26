@@ -1,3 +1,4 @@
+import { MarketRateService } from '../../core/market/market-rate.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -90,7 +91,7 @@ interface TopUp { id: string; amount: string; payment_method: PaymentMethod; top
             </div>
             <p class="girvi-rate-note" *ngIf="item.metal === 'gold' && item.purity === '16K'">16K reference rate is calculated proportionally from the 18K market quote; confirm or edit the agreed rate.</p>
             <div class="payment-line">
-              <button class="text-btn" type="button" (click)="fetchRate(item)" [disabled]="rateLoading">{{rateLoading ? 'Fetching rate…' : 'Use current rate'}}</button>
+              <button class="text-btn" type="button" (click)="fetchRate(item)" [disabled]="rateLoading">{{rateLoading ? 'Fetching rate…' : 'Use cached rate'}}</button>
               <label>Agreed rate / gram (₹)<input [(ngModel)]="item.rate" [name]="'itemRate'+i" type="number" min="0.0001" step="0.0001" required></label>
               <span class="girvi-item-value">Assessed value <b>{{inr(itemValue(item))}}</b></span>
             </div>
@@ -383,7 +384,7 @@ export class GirviComponent implements OnInit, OnDestroy {
   constructor(
     private readonly service: WorkspaceService,
     private readonly cdr: ChangeDetectorRef,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer, private readonly market: MarketRateService
   ) {}
 
   get canPost(): boolean { return this.workspace?.role === 'owner' || this.workspace?.role === 'admin'; }
@@ -492,13 +493,12 @@ export class GirviComponent implements OnInit, OnDestroy {
     if(!client||!workspace)return;
     this.rateLoading=true;this.formError='';
     try {
-      const purityFactor=this.purityFactor(item)*(item.metal==='gold'&&item.purity==='16K'?16/18:1);
-      const quotePurity=item.metal==='gold'&&item.purity==='16K'?'18K':item.purity;
-      const result=await client.functions.invoke('market-gold-rate',{body:{businessId:workspace.id,...(item.metal==='gold'?{purity:quotePurity}:{metal:'silver'})}});
-      if(result.error)throw new Error(result.error.message);
-      const quote=result.data as {rate?:number;error?:string;unit?:string}|null;
-      if(!quote||quote.error||quote.unit!=='gram'||typeof quote.rate!=='number'||!Number.isFinite(quote.rate)||quote.rate<=0)throw new Error(quote?.error||'The live rate was not a valid per-gram quote.');
-      item.rate=(quote.rate*purityFactor).toFixed(4);
+      const metal=item.metal,purity=item.purity,factor=this.purityFactor(item);
+      await this.market.load(workspace.id);
+      if(this.workspace?.id!==workspace.id||item.metal!==metal||item.purity!==purity)return;
+      const quote=this.market.quote(workspace.id,metal,purity);
+      if(!quote)throw new Error('No fresh market rate. Verify and enter a manual rate.');
+      item.rate=(Number(quote.value)*factor).toFixed(4);
     } catch(error) { this.formError=error instanceof Error?error.message:'Could not fetch the live rate.'; }
     finally { this.rateLoading=false;this.cdr.markForCheck(); }
   }

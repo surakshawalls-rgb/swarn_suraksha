@@ -68,7 +68,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
 }
 
-/* Base plate (ivory – used for 22K, 18K …) */
+/* Base plate (ivory â€“ used for 22K, 18K â€¦) */
 .rate-card {
   position: relative; display: flex; flex-direction: column; min-height: 232px; padding: 22px 24px 18px;
   overflow: hidden; isolation: isolate; border-radius: 22px; color: var(--ink);
@@ -82,7 +82,7 @@
   animation: strike .75s cubic-bezier(.2,.8,.2,1) backwards;
   animation-delay: calc(var(--card-order, 0) * 80ms);
 }
-/* light sweep – only when the user hovers */
+/* light sweep â€“ only when the user hovers */
 .rate-card::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.6) 50%, transparent 65%);
@@ -134,7 +134,7 @@
 .rate-breakdown dd { margin: 0; font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 .silver-error { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: #9b3b30; }
 
-/* 24K – struck gold plate (the hero of the page) */
+/* 24K â€“ struck gold plate (the hero of the page) */
 .rate-card-featured {
   color: #33240a; border-color: #b88a2c;
   background:
@@ -150,7 +150,7 @@
 .rate-card-featured .purity-badge { color: #4b3408; background: linear-gradient(180deg, #fff6d6, #f1d78c); }
 .rate-card-featured .card-footer { color: #5d4513; border-top-color: rgba(80,56,10,.3); }
 
-/* Silver – brushed steel plate */
+/* Silver â€“ brushed steel plate */
 .rate-card-silver {
   border-color: #c8ced4;
   background:
@@ -215,4 +215,193 @@
 @media (prefers-reduced-motion: reduce) {
   .rate-card, .rate-card::after, .refresh-button { animation: none !important; transition: none !important; }
   .rate-card:hover { transform: none; }
+}
+
+/* =========================================
+   MARKET DASHBOARD UI V2
+   ========================================= */
+
+.rate-board {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
+
+.rate-board.expanded-rates {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rate-card {
+  min-width: 0;
+  min-height: 280px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.rate-card-featured {
+  order: -2;
+}
+
+.rate-card-silver {
+  order: -1;
+}
+
+.rate-card .price {
+  font-size: clamp(28px, 3.2vw, 44px);
+  letter-spacing: -1px;
+}
+
+.rate-card h3 {
+  font-size: 22px;
+}
+
+.rate-card .card-footer {
+  margin-top: auto;
+}
+
+.rate-breakdown {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rate-breakdown > div {
+  min-height: 38px;
+}
+
+.rate-breakdown dd {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.kilogram-rate {
+  font-weight: 700;
+}
+
+.status-indicator.is-stale {
+  background: #d49a24;
+  box-shadow: 0 0 0 4px rgba(212, 154, 36, .18);
+}
+
+.status-indicator.is-busy {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.market-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin: 12px 0 18px;
+  border: 1px solid rgba(194, 154, 62, .32);
+  background: rgba(194, 154, 62, .09);
+  color: var(--ink);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.warning-dot {
+  flex: 0 0 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d49a24;
+}
+
+.market-update-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px 32px;
+  padding: 18px 20px;
+  margin: 20px 0;
+  border: 1px solid rgba(181, 138, 57, .24);
+  border-radius: 14px;
+  background: rgba(181, 138, 57, .045);
+}
+
+.market-update-item {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.update-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  opacity: .7;
+}
+
+.market-update-item strong {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.market-update-item .update-paused {
+  color: #a67518;
+}
+
+.more-rates {
+  margin-top: 18px;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+.quote-info {
+  margin-top: 16px;
+  line-height: 1.6;
+}
+
+:host-context(html[data-ss-theme='dark']) .market-update-item .update-paused {
+  color: #e7b85b;
+}
+
+@media (max-width: 1000px) {
+  .rate-board.expanded-rates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .rate-board,
+  .rate-board.expanded-rates {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .rate-card {
+    min-height: 260px;
+    padding: 20px;
+  }
+
+  .rate-card .price {
+    font-size: 34px;
+  }
+
+  .market-update-bar {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .market-update-item {
+    flex-basis: 130px;
+  }
+
+  .market-warning {
+    align-items: flex-start;
+  }
+
+  .warning-dot {
+    margin-top: 6px;
+  }
+
+  .control-capsule {
+    flex-wrap: wrap;
+    height: auto;
+  }
 }

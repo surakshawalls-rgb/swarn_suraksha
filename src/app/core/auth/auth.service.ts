@@ -78,6 +78,12 @@ export class AuthService implements OnDestroy {
     }
   }
 
+  async signInWithPassword(email: string, password: string): Promise<void> {
+    const { data, error } = await this.requireClient().auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    this.sessionState.next(data.session);
+  }
+
   async signOut(): Promise<void> {
     const { error } = await this.requireClient().auth.signOut();
     if (error) throw error;

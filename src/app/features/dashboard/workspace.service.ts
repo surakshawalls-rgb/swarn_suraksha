@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { User } from '@supabase/supabase-js';
 import { SupabaseService } from '../../core/supabase/supabase.service';
@@ -50,7 +50,7 @@ export class WorkspaceService {
       .abortSignal(signal));
     if (membershipResult.error) throw this.describe('Checking workspace memberships', membershipResult.error);
     const memberships = membershipResult.data ?? [];
-    if (memberships.length === 0) return [];
+    if (memberships.length === 0) { this.activeState.next(null); return []; }
 
     const businessIds = memberships.map(row => row.business_id);
     const businessResult = await this.runRequest('Loading your workspaces', signal => client.from('business_profiles')
@@ -71,46 +71,10 @@ export class WorkspaceService {
     const storedId = localStorage.getItem('swarn-suraksha.active-business');
     const active = workspaces.find(item => item.id === storedId) ?? (workspaces.length === 1 ? workspaces[0] : null);
     if (active) this.setActiveWorkspace(active);
+    else this.activeState.next(null);
     return workspaces;
   }
 
-  async createWorkspace(values: {
-    businessName: string;
-    contactName: string;
-    mobile: string;
-    city: string;
-    state: string;
-  }): Promise<string> {
-    await this.ensureProfile();
-
-    const { data, error } = await this.runRequest(
-      'Creating your workspace',
-      signal =>
-        this.requireClient()
-          .rpc('create_business', {
-            p_business_name: values.businessName.trim(),
-            p_contact_name: values.contactName.trim() || null,
-            p_phone: values.mobile.trim() || null,
-            p_address: JSON.stringify({
-              city: values.city.trim(),
-              state: values.state.trim()
-            })
-          })
-          .abortSignal(signal)
-    );
-
-    if (error) {
-      throw this.describe('Creating your workspace', error);
-    }
-
-    if (typeof data !== 'string' || !data) {
-      throw new Error(
-        'Workspace creation returned no business ID. Check the create_business function.'
-      );
-    }
-
-    return data;
-  }
   setActiveWorkspace(workspace: BusinessWorkspace): void {
     localStorage.setItem('swarn-suraksha.active-business', workspace.id);
     this.activeState.next(workspace);

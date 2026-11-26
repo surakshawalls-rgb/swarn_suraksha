@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+
+/* ==========================================================================
+   SwarnaSuraksha – Premium layer (buttons, sidebar controls, dark mode)
+   Loaded after product.scss and pro-theme.scss. Presentation only.
+   ========================================================================== */
+
+html[lang='hi'] body, html[lang='hi'] button, html[lang='hi'] input, html[lang='hi'] select {
+  font-family: 'DM Sans', 'Noto Sans Devanagari', sans-serif;
+}
+
+/* ---------- Sidebar: theme + language controls (below Active Business) ---------- */
+.app-shell .shell-prefs { display: grid; gap: 8px; margin: 0 16px 16px; }
+.app-shell .shell-prefs .pref { position: relative; }
+.app-shell .shell-prefs .pref-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px; cursor: pointer;
+  color: #f1ecdd; text-align: left; border: 1px solid rgba(236, 209, 131, .22); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 6px 14px -8px rgba(0,0,0,.6);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.app-shell .shell-prefs .pref-btn:hover { border-color: rgba(236, 209, 131, .55); background: rgba(236, 209, 131, .09); }
+.app-shell .shell-prefs .pref-btn:focus-visible { outline: 2px solid #ecd183; outline-offset: 2px; }
+.app-shell .shell-prefs .pref-btn > svg:first-child { flex: none; color: #ecd183; }
+.app-shell .shell-prefs .pref-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.app-shell .shell-prefs .pref-text small { color: #9fb0a4; font-size: 9px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; }
+.app-shell .shell-prefs .pref-text b { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-shell .shell-prefs .pref-chevron { flex: none; color: #9fb0a4; transition: transform .18s ease; }
+.app-shell .shell-prefs .pref-btn[aria-expanded='true'] .pref-chevron { transform: rotate(180deg); }
+.app-shell .shell-prefs .pref-menu {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); display: grid; gap: 2px; padding: 6px;
+  border: 1px solid rgba(236, 209, 131, .3); border-radius: 12px; background: #1b2c23;
+  box-shadow: 0 18px 36px -12px rgba(0,0,0,.7);
+}
+.app-shell .shell-prefs .pref-menu button {
+  padding: 9px 11px; cursor: pointer; text-align: left; font: 600 13px 'DM Sans', 'Noto Sans Devanagari', sans-serif;
+  color: #dfe7e1; border: 0; border-radius: 8px; background: transparent;
+}
+.app-shell .shell-prefs .pref-menu button:hover { background: rgba(255,255,255,.08); }
+.app-shell .shell-prefs .pref-menu button.on { color: #20170a; background: linear-gradient(180deg, #f6e7b4, #d9b25a); }
+
+@media (max-width: 900px) {
+  .app-shell .shell-prefs { grid-template-columns: 1fr 1fr; margin: 0 12px 10px; }
+  .app-shell .shell-prefs .pref-text small { display: none; }
+}
+
+/* ---------- Button system ---------- */
+.primary-btn, .create-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 20px;
+  font: 700 14px 'DM Sans', 'Noto Sans Devanagari', sans-serif; letter-spacing: .1px; color: #fffaf0; cursor: pointer;
+  border: 1px solid #12301f; border-radius: 12px;
+  background: linear-gradient(180deg, #2f5a42 0%, #1d3b2b 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 8px 18px -8px rgba(18,48,31,.7);
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.primary-btn:hover:not(:disabled), .create-button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
+.primary-btn:disabled, .create-button:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Secondary buttons: clean outlined pills instead of bare text */
+.text-btn, .inline-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 7px 14px;
+  font: 600 13px 'DM Sans', 'Noto Sans Devanagari', sans-serif; color: #234234; cursor: pointer;
+  border: 1px solid #d8dfd5; border-radius: 10px; background: linear-gradient(180deg, #fff, #f5f7f2);
+  box-shadow: 0 1px 0 #fff inset, 0 2px 4px -2px rgba(18,33,26,.18);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.text-btn:hover:not(:disabled), .inline-button:hover:not(:disabled) { transform: translateY(-1px); border-color: #b9c8b8; background: #fff; }
+.text-btn:disabled, .inline-button:disabled { cursor: not-allowed; opacity: .55; }
+.text-btn:focus-visible, .primary-btn:focus-visible, .inline-button:focus-visible { outline: 2px solid #c29a3e; outline-offset: 2px; }
+.danger-text { color: #9a2d24 !important; border-color: #efcfca !important; background: linear-gradient(180deg, #fff, #fdf3f1) !important; }
+
+/* Role-based variants */
+.text-btn.btn-save {
+  color: #fffaf0; border-color: #12301f; background: linear-gradient(180deg, #2f5a42, #1d3b2b);
+  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 6px 14px -8px rgba(18,48,31,.7);
+}
+.text-btn.btn-save:hover:not(:disabled) { background: linear-gradient(180deg, #356348, #20412f); }
+.text-btn.btn-pdf {
+  color: #3d2a05; border-color: #c9a24b; background: linear-gradient(180deg, #fbe9ae, #e2bb5e);
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 6px 14px -8px rgba(138,100,32,.8);
+}
+.text-btn.btn-pdf:hover:not(:disabled) { background: linear-gradient(180deg, #fdefbf, #e8c56c); border-color: #b88f36; }
+.text-btn.btn-whatsapp { color: #135c36; border-color: #bfe0cb; background: linear-gradient(180deg, #fff, #effaf3); }
+.text-btn .btn-icon, .primary-btn .btn-icon { width: 16px; height: 16px; margin: 0; vertical-align: middle; }
+
+/* Row action groups wrap neatly instead of squeezing */
+.bill-actions, .row-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bill-actions .text-btn, .row-actions .text-btn { min-height: 32px; padding: 5px 11px; font-size: 12px; margin: 0; }
+
+/* Empty-state call to action looks like a real button */
+.customer-empty .text-btn, .rate-empty .text-btn {
+  margin-top: 12px; padding: 9px 18px; color: #fffaf0; border-color: #12301f;
+  background: linear-gradient(180deg, #2f5a42, #1d3b2b);
+}
+
+/* ---------- Gold cards: 10 gram and 1 bhar rows ---------- */
+.rate-card:not(.rate-card-silver) .rate-breakdown > div {
+  background: rgba(255,255,255,.5);
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 3px 8px -5px rgba(112,78,16,.45);
+}
+.rate-card:not(.rate-card-silver) .rate-breakdown dt, .rate-card:not(.rate-card-silver) .rate-breakdown dd { color: #4b3408; }
+
+/* Night mode now lives in night-premium.scss (real dark palette, no filters). */
+
+/* ---------- Premium invoice number ---------- */
+.inv-no {
+  display: inline-flex; align-items: center; padding: 3px 11px; border-radius: 999px; white-space: nowrap;
+  font: 700 12px 'DM Sans', sans-serif; letter-spacing: .7px; font-variant-numeric: tabular-nums;
+  color: #5b4208; border: 1px solid #d9b25a;
+  background: linear-gradient(180deg, #fcf3d3, #efd58a);
+  box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 4px 10px -6px rgba(138,100,32,.7);
+}
+.inv-no.inv-no-lg { font-size: 13px; padding: 4px 13px; margin-bottom: 4px; }
+
+/* ---------- Icons never grow beyond their button ---------- */
+svg.btn-icon { width: 16px !important; height: 16px !important; max-width: 16px; max-height: 16px; flex: 0 0 16px; }
+
+/* ---------- Bill row actions: wrap instead of overlapping ---------- */
+.purchase-history td.bill-actions,
+.purchase-history .bill-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; white-space: normal; }
+.purchase-history td.bill-actions { min-width: 320px; }
+.purchase-history .bill-actions > *, .purchase-history .bill-actions .text-btn {
+  position: static; flex: 0 0 auto; width: auto; max-width: 100%; margin: 0; white-space: nowrap; overflow: visible;
+}
+.receipt-actions .text-btn, .receipt-actions .primary-btn { flex: 0 0 auto; white-space: nowrap; }
+
+/* ===== Premium action buttons: full width, left to right, on every dashboard page ===== */
+
+/* Primary / save buttons (page header, form submit, Save customer ...) */
+.app-main .top-actions { flex: 1 1 auto; margin-left: 24px; gap: 12px; }
+.app-main .top-actions .primary-btn { flex: 1 1 0; }
+.app-main .top-actions .primary-btn,
+.app-main .form-actions .primary-btn,
+.app-main .payment-line > .btn-save,
+.app-main .text-btn.btn-save {
+  position: relative; display: inline-flex !important; align-items: center; justify-content: center; gap: 10px;
+  width: 100% !important; min-height: 54px; padding: 0 28px; border-radius: 14px;
+  font: 700 15px/1 'DM Sans', 'Noto Sans Devanagari', sans-serif; letter-spacing: .4px; color: #fbefc9;
+  border: 1px solid #c9a24b; text-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+  background: linear-gradient(180deg, #2f5a42 0%, #173126 100%);
+  box-shadow: 0 1px 0 rgba(255, 236, 170, .45) inset, 0 0 0 3px rgba(217, 178, 90, .12), 0 14px 24px -14px rgba(18, 48, 31, .9);
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.app-main .top-actions .primary-btn:hover:not(:disabled),
+.app-main .form-actions .primary-btn:hover:not(:disabled),
+.app-main .payment-line > .btn-save:hover:not(:disabled),
+.app-main .text-btn.btn-save:hover:not(:disabled) {
+  transform: translateY(-2px); filter: brightness(1.08);
+  box-shadow: 0 1px 0 rgba(255, 236, 170, .55) inset, 0 0 0 4px rgba(217, 178, 90, .22), 0 18px 28px -14px rgba(18, 48, 31, .95);
+}
+.app-main .top-actions .primary-btn:active:not(:disabled),
+.app-main .form-actions .primary-btn:active:not(:disabled),
+.app-main .text-btn.btn-save:active:not(:disabled) { transform: translateY(0); }
+.app-main .top-actions .primary-btn:disabled,
+.app-main .form-actions .primary-btn:disabled,
+.app-main .text-btn.btn-save:disabled { opacity: .55; }
+.app-main .payment-line > .btn-save { grid-column: 1 / -1; }
+
+/* Form submit rows: button on its own full-width line, hint text underneath */
+.app-main form .form-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.app-main form .form-actions > span { text-align: center; }
+
+/* "Add another item / exchange item / payment" buttons */
+.app-main .add-item-btn {
+  display: flex !important; align-items: center; justify-content: center; gap: 12px;
+  width: 100% !important; justify-self: stretch !important; min-height: 54px; padding: 10px 20px; border-radius: 14px;
+  font: 700 14px 'DM Sans', 'Noto Sans Devanagari', sans-serif; letter-spacing: .3px; color: #3d2a05;
+  border: 1.5px dashed #c9a24b; background: linear-gradient(180deg, #fffdf5, #faf1d6);
+  box-shadow: 0 1px 0 #fff inset, 0 8px 16px -12px rgba(138, 100, 32, .7);
+}
+.app-main .add-item-btn:hover:not(:disabled) {
+  transform: translateY(-1px); border-style: solid; border-color: #b88f36;
+  background: linear-gradient(180deg, #fdf0bf, #ecd081);
+}
+.app-main .add-item-btn svg.btn-icon {
+  width: 26px !important; height: 26px !important; max-width: 26px; max-height: 26px; flex: 0 0 26px;
+  box-sizing: border-box; padding: 5px; margin: 0; border-radius: 50%; color: #3d2a05;
+  background: linear-gradient(180deg, #f9e29a, #d9b25a); box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset;
+}
+.app-main .line-heading { flex-wrap: wrap; gap: 10px; }
+.app-main .line-heading > .add-item-btn { flex: 1 1 100%; order: 3; }
+
+/* "Customer is exchanging old jewellery?" */
+.app-main .exchange-toggle {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 58px; padding: 14px 20px; cursor: pointer;
+  font-size: 14px; font-weight: 700; color: #3b2e10;
+  border: 1px solid #e3d3a6; border-left: 5px solid #c9a24b; border-radius: 14px;
+  background: linear-gradient(180deg, #fffdf7, #f8f1dc);
+  box-shadow: 0 1px 0 #fff inset, 0 8px 16px -12px rgba(138, 100, 32, .6);
+}
+.app-main .exchange-toggle:hover { border-color: #c9a24b; }
+.app-main .exchange-toggle input { flex: none; width: 22px; height: 22px; accent-color: #2f5a42; }
+
+@media (max-width: 700px) {
+  .app-main .top-actions { margin-left: 0; }
+  .purchase-history td.bill-actions { min-width: 240px; }
+}

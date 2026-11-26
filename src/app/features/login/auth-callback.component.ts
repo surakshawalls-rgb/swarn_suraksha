@@ -42,7 +42,7 @@ export class AuthCallbackComponent implements OnInit {
       if (this.auth.user) {
         try {
           await this.workspace.ensureProfile();
-          await this.router.navigateByUrl('/dashboard');
+          await this.router.navigateByUrl('/account');
         } catch (error) {
           this.busy = false;
           this.profileSetupFailed = true;
@@ -71,7 +71,7 @@ export class AuthCallbackComponent implements OnInit {
     try {
       await this.workspace.ensureProfile();
       this.profileSetupFailed = false;
-      await this.router.navigateByUrl('/dashboard');
+      await this.router.navigateByUrl('/account');
     } catch (error) {
       this.errorMessage = error instanceof Error ? error.message : 'Could not save your user profile.';
     } finally {
@@ -81,7 +81,7 @@ export class AuthCallbackComponent implements OnInit {
   }
 
   async continueToWorkspace(): Promise<void> {
-    await this.router.navigateByUrl('/dashboard');
+    await this.router.navigateByUrl('/account');
   }
 
   async goToLogin(): Promise<void> {

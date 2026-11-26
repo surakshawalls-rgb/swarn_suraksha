@@ -1,3 +1,4 @@
+import { MarketRateService } from '../../core/market/market-rate.service';
 import { renderReceiptPdf } from '../../core/financial/receipt-pdf';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
@@ -48,7 +49,7 @@ interface PendingCustomerPayment { key:string; customerId:string; amount:string;
 
       <section class="panel customer-editor" *ngIf="editing && !pending && canPost">
         <div class="panel-head"><div><h2>New invoice</h2><p>Choose an indicative cached rate or saved shop rate, confirm it for this bill, then record any payment received.</p></div><button class="text-btn" type="button" (click)="editing = false">Cancel</button></div>
-        <p class="duplicate-warning" role="note">GoldAPI quotes are international spot references, not domestic shop prices. Verify or edit each rate before posting; the confirmed rate and selected GST are saved with the invoice.</p>
+        <p class="duplicate-warning" role="note">Nebula Metals rates are indicative, excluding GST. Older market rates are not automatically applied. Verify or edit each rate before posting; the confirmed rate and selected GST are saved with the invoice.</p>
         <form class="customer-form purchase-form" (ngSubmit)="post()">
           <div class="customer-search-field">
             <label for="customer-search">Find customer by name, mobile or address</label>
@@ -282,7 +283,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   pendingCustomerExchange:{key:string;customerId:string;items:Json[]}|null=null;
   private subscription: Subscription | null = null; private requestId = 0;
   private customerSearchRequest=0;private customerSearchTimer:ReturnType<typeof setTimeout>|undefined;private customerSearchController:AbortController|null=null;
-  constructor(private readonly workspaceService: WorkspaceService, readonly network: NetworkStatusService, private readonly cdr: ChangeDetectorRef) {}
+  constructor(private readonly workspaceService: WorkspaceService, readonly network: NetworkStatusService, private readonly cdr: ChangeDetectorRef, private readonly market: MarketRateService) {}
   get canPost(): boolean { return this.workspace?.role === 'owner' || this.workspace?.role === 'admin'; }
   fixed(value:bigint,scale:number):string{return formatFixed(value,scale);}
 
@@ -312,7 +313,8 @@ export class SalesComponent implements OnInit, OnDestroy {
       const [customerResult, rateResult, saleResult] = await Promise.all([
         this.withTimeout(client.from('customers').select('id,full_name,phone,address').eq('business_id',workspace.id).eq('status','active').order('full_name').abortSignal(customersController.signal),'Loading customers',()=>customersController.abort()),
         this.withTimeout(client.from('ss_metal_rate_snapshots' as any).select('id,metal,purity,unit,reference_rate,shop_buy_rate,shop_sell_rate,recorded_at').eq('business_id',workspace.id).eq('unit','gram').order('recorded_at',{ascending:false}).limit(100).abortSignal(ratesController.signal),'Loading saved rates',()=>ratesController.abort()),
-        this.withTimeout(client.from('ss_sales' as any).select('id,customer_id,invoice_number,subtotal,taxable_subtotal,gst_percent,gst_amount,paid_total,created_at').eq('business_id',workspace.id).order('created_at',{ascending:false}).limit(100).abortSignal(salesController.signal),'Loading sales',()=>salesController.abort())
+        this.withTimeout(client.from('ss_sales' as any).select('id,customer_id,invoice_number,subtotal,taxable_subtotal,gst_percent,gst_amount,paid_total,created_at').eq('business_id',workspace.id).order('created_at',{ascending:false}).limit(100).abortSignal(salesController.signal),'Loading sales',()=>salesController.abort()),
+        this.market.load(workspace.id).catch(()=>null)
       ]);
       if (customerResult.error) throw new Error(`${customerResult.error.code ?? 'Supabase'}: ${customerResult.error.message}`);
       if (rateResult.error) throw new Error(`${rateResult.error.code ?? 'Supabase'}: ${rateResult.error.message}`);
@@ -764,31 +766,8 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
   metalChanged(line:SaleDraftLine):void{line.purity=line.metal==='gold'?'24K':'';line.making_charge_percent=line.metal==='gold'?'12':'0';line.rate_snapshot_id='';this.rateChanged(line);}
   saleRateChanged(line:SaleDraftLine):void{line.rate_snapshot_id='';line.rate_source_label='Entered billing rate';}
-  private cachedQuote(key:string):{data:{rate?:unknown;ratePerKilogram?:unknown;purity?:unknown;providerTimestamp?:unknown};cachedAt:number;stale:boolean}|null{
-    try{
-      const raw=localStorage.getItem(`swarnasuraksha_rates_${key}`);
-      if(!raw)return null;
-      const cached=JSON.parse(raw) as {data?:{rate?:unknown;ratePerKilogram?:unknown;purity?:unknown;providerTimestamp?:unknown};cachedAt?:number};
-      if(!cached.data||typeof cached.cachedAt!=='number'||!Number.isFinite(cached.cachedAt)||cached.cachedAt>Date.now())return null;
-      return{data:cached.data,cachedAt:cached.cachedAt,stale:Date.now()-cached.cachedAt>=30*60*1000};
-    }catch{return null;}
-  }
   private marketRate(metal:'gold'|'silver',purity:string):{value:string;label:string}|null{
-    if(metal==='silver'){
-      const cached=this.cachedQuote('silver'),quote=cached?.data;
-      const perGram=typeof quote?.rate==='number'?quote.rate:typeof quote?.ratePerKilogram==='number'?quote.ratePerKilogram/1000:0;
-      return Number.isFinite(perGram)&&perGram>0?{value:perGram.toFixed(4),label:`${cached?.stale?'Older cached':'Cached'} GoldAPI silver spot${typeof quote?.providerTimestamp==='string'?` · ${quote.providerTimestamp}`:''} · indicative`}:null;
-    }
-    const exactCached=this.cachedQuote(`gold_${purity.toLowerCase()}`),exact=exactCached?.data;
-    const exactRate=exact?.purity===purity&&typeof exact.rate==='number'?exact.rate:0;
-    if(Number.isFinite(exactRate)&&exactRate>0)return{value:exactRate.toFixed(4),label:`${exactCached?.stale?'Older cached':'Cached'} GoldAPI ${purity} spot${typeof exact?.providerTimestamp==='string'?` · ${exact.providerTimestamp}`:''} · indicative`};
-    const referenceCached=this.cachedQuote('gold_24k'),reference=referenceCached?.data;
-    const referenceRate=reference?.purity==='24K'&&typeof reference.rate==='number'?reference.rate:0;
-    const karat=Number(/^(\d+(?:\.\d+)?)K$/.exec(purity)?.[1]);
-    if(Number.isFinite(referenceRate)&&referenceRate>0&&Number.isFinite(karat)&&karat>0&&karat<=24){
-      return{value:(referenceRate*karat/24).toFixed(4),label:`Derived from ${referenceCached?.stale?'older cached':'cached'} 24K GoldAPI spot${typeof reference?.providerTimestamp==='string'?` · ${reference.providerTimestamp}`:''} · indicative`};
-    }
-    return null;
+    return this.workspace?this.market.quote(this.workspace.id,metal,purity):null;
   }
   private async createRateSnapshot(
     client:NonNullable<WorkspaceService['client']>,businessId:string,metal:'gold'|'silver',
