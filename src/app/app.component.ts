@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { UiPrefsService } from './core/ui/ui-prefs.service';
+import { FieldValidationService } from './core/ui/field-validation.service';
 
 @Component({
   selector: 'ss-root',
@@ -9,5 +10,5 @@ import { UiPrefsService } from './core/ui/ui-prefs.service';
   template: '<ion-app><ion-router-outlet></ion-router-outlet></ion-app>'
 })
 export class AppComponent {
-  constructor(ui: UiPrefsService) { ui.start(); }
+  constructor(ui: UiPrefsService, validation: FieldValidationService) { ui.start(); validation.start(); }
 }
