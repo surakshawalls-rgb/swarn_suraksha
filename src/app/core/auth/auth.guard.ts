@@ -14,6 +14,15 @@ export const authGuard: CanActivateFn = async (_route, state) => {
   return auth.user ? true : router.createUrlTree(['/login'], { queryParams: { returnTo: state.url } });
 };
 
+// Decides where a fresh app open should land: signed-in users go straight to their workspace,
+// everyone else sees the sign-in page.
+export const startGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  try { await auth.initialize(); } catch { return router.createUrlTree(['/login']); }
+  return router.createUrlTree([auth.user ? '/dashboard' : '/login']);
+};
+
 export const businessGuard: CanActivateFn = async () => {
  const auth=inject(AuthService), router=inject(Router), access=inject(AccountAccessService);
  try { await auth.initialize(); if (!auth.user) return router.createUrlTree(['/login']);
