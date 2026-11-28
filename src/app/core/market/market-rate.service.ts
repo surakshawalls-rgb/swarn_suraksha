@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../supabase/supabase.service';
 import { environment } from '../../../environments/environment';
-export interface MarketSnapshot { gold: Record<string,{basePricePerGram:number}>; silver:{basePricePerGram:number}; lastUpdatedAt:string; marketTimestamp:string; city:string; provider:string; confidence:string; automaticRefreshEnabled?:boolean; }
+export interface MarketSnapshot { gold: Record<string,{basePricePerGram:number;gstPercent?:number;gstAmountPerGram?:number;finalPricePerGram?:number;displayPricePerGram?:number;gstIncluded?:boolean}>; silver:{basePricePerGram:number;gstPercent?:number;gstAmountPerGram?:number;finalPricePerGram?:number;displayPricePerGram?:number;gstIncluded?:boolean}; lastUpdatedAt:string; marketTimestamp:string; city:string; provider:string; confidence:string; automaticRefreshEnabled?:boolean; }
 export function stale(s:MarketSnapshot):boolean {
  const offset=19800000, now=Date.now(), day=Math.floor((now+offset)/86400000)*86400000-offset;
  const expected=now>=day+47700000?day+46800000:now>=day+33300000?day+32400000:day-39600000;

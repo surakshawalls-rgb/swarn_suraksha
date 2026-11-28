@@ -11,8 +11,8 @@ export class RatesComponent implements OnInit,OnDestroy {
  snapshot:MarketSnapshot|null=null; private sub?:Subscription; private request=0;
  readonly silverBharGrams=11.6638;
  constructor(private workspaceService:WorkspaceService,private cdr:ChangeDetectorRef,private market:MarketRateService){}
- get rates(){return this.snapshot?(this.showOtherGoldRates?['24K','22K','20K','18K','14K']:['24K']).map(purity=>({purity,rate:this.snapshot!.gold[purity].basePricePerGram})):[];}
- get latestQuoteTime(){return this.snapshot?.lastUpdatedAt??null;} get silverRate(){return this.snapshot?.silver.basePricePerGram??null;}
+ get rates(){return this.snapshot?(this.showOtherGoldRates?['24K','22K','20K','18K','14K']:['24K']).map(purity=>({purity,rate:(this.snapshot!.gold[purity].displayPricePerGram ?? this.snapshot!.gold[purity].finalPricePerGram ?? Math.round(this.snapshot!.gold[purity].basePricePerGram * 103) / 100)})):[];}
+ get latestQuoteTime(){return this.snapshot?.lastUpdatedAt??null;} get silverRate(){return this.snapshot ? (this.snapshot.silver.displayPricePerGram ?? this.snapshot.silver.finalPricePerGram ?? Math.round(this.snapshot.silver.basePricePerGram * 103) / 100) : null;}
  get silverFetchedAt(){return this.latestQuoteTime;} get silverFetching(){return this.fetching;} get silverErrorMessage(){return this.errorMessage;}
  get isStale(){return !!this.snapshot&&stale(this.snapshot);} get canRefresh(){return this.personal||!!this.workspace;}
  ngOnInit(){if(this.personal){void this.fetchGoldRates();return;}this.sub=this.workspaceService.activeWorkspace$.subscribe(w=>{this.workspace=w;this.snapshot=null;this.fetching=false;this.request++;if(w)void this.fetchGoldRates();});}

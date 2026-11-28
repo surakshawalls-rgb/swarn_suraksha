@@ -1,3 +1,4 @@
+import { drawBusinessLetterhead } from '../../core/financial/business-letterhead';
 import { MarketRateService } from '../../core/market/market-rate.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
@@ -721,7 +722,7 @@ export class GirviComponent implements OnInit, OnDestroy {
     const {jsPDF}=await import('jspdf');
     const pdf=new jsPDF({unit:'mm',format:'a4'}),left=15,width=180;
     let y=18;
-    const header=()=>{pdf.setFillColor(248,242,226);pdf.rect(0,0,210,38,'F');pdf.setFillColor(166,125,48);pdf.rect(0,38,210,1,'F');pdf.setFont('helvetica','bold');pdf.setFontSize(19);pdf.setTextColor(43,38,30);const name=workspace.name||'Jewellery Business';const names=pdf.splitTextToSize(name,180) as string[];pdf.text(names.slice(0,2),left,13);pdf.setFontSize(10);pdf.text(`GIRVI PLEDGE AGREEMENT | #${pledge.girvi_number}`,left,32);y=48;};
+    const header=()=>{y=drawBusinessLetterhead(pdf,workspace.letterhead??{name:workspace.name,lines:[]},'GIRVI PLEDGE AGREEMENT',`#${pledge.girvi_number}`);pdf.setTextColor(43,61,49);if(y>235)throw new Error('Business letterhead is too long for the agreement.');};
     header();
     const ensure=(height=8):void=>{if(y+height>274){pdf.addPage();header();}};
     const text=(value:string,size=9,bold=false,indent=0):void=>{

@@ -1,9 +1,11 @@
+import { BusinessLetterhead, drawBusinessLetterhead } from './business-letterhead';
 import type { jsPDF } from 'jspdf';
 import { formatFixed, parseFixed } from './decimal';
 
 /** Plain, already-resolved data for one sales receipt. Amounts are decimal strings (e.g. "4973.77"). */
 export interface ReceiptPdfData {
   business: string;
+  letterhead?: BusinessLetterhead;
   invoiceNo: string;
   dateLabel: string;
   customer: string;
@@ -67,17 +69,8 @@ export function renderReceiptPdf(pdf: jsPDF, d: ReceiptPdfData): void {
   const fit = (s: string, width: number, size: number, bold = false): string => wrap(s, width, size, bold, 1)[0] ?? '';
 
   const drawHeader = () => {
-    fillC(NAVY); pdf.rect(0, 0, PW, 42, 'F');
-    fillC(GOLD); pdf.rect(0, 42, PW, 1.6, 'F');
-    fillC(GOLD); pdf.circle(L + 9, 21, 9, 'F');
-    drawC(NAVY); pdf.setLineWidth(0.5); pdf.circle(L + 9, 21, 7.4, 'S');
-    txt((d.business.trim().charAt(0) || 'S').toUpperCase(), L + 9, 24.6, 16, true, NAVY, 'center');
-    txt(fit(d.business, 100, 17, true), L + 23, 20, 17, true, WHITE);
-    txt('SALES RECEIPT', L + 23, 28, 8.5, true, GOLD);
-    txt('INVOICE NO.', R, 15, 7, true, GOLD, 'right');
-    txt(d.invoiceNo, R, 22, 13, true, WHITE, 'right');
-    txt(d.dateLabel, R, 29, 8.5, false, [200, 205, 218], 'right');
-    y = 52;
+    y = drawBusinessLetterhead(pdf, d.letterhead ?? {name:d.business,lines:[]}, 'SALES RECEIPT', `Invoice ${d.invoiceNo} | ${d.dateLabel}`);
+    if (y + 41 > BOTTOM) throw new Error('Business letterhead is too long for the receipt.');
   };
   const newPage = () => {
     pdf.addPage();

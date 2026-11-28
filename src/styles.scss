@@ -79,3 +79,9 @@ ss-stock-register .topbar, ss-supplier-directory .topbar {position:relative;top:
 .developer-credit{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:5px;padding:18px 12px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin-top:24px}.developer-credit a{color:var(--gold);font-weight:700;text-decoration:none}.developer-credit a:hover{text-decoration:underline}
 .receipt-print header{background:#faf4e5;color:#49381d;border-bottom:2px solid #b58b43;padding:12px 8px}.receipt-print header h1{font-size:23pt;overflow-wrap:anywhere}.receipt-print header p{color:#876526;font-weight:700}.receipt-print table th{background:#eee6d5;color:#49381d}.receipt-print tbody tr:nth-child(even){background:#faf9f6}.receipt-print .receipt-totals{max-width:340px;background:#faf7ef;padding:12px;border:1px solid #d9c9a5;border-radius:5px}.receipt-print footer{border-top:1px solid #b58b43;line-height:1.6}.receipt-print footer a{color:#876526;font-weight:700}.receipt-print.receipt-thermal header h1{font-size:14pt}.receipt-print.receipt-thermal .receipt-totals{padding:5px;gap:4px}.receipt-print.receipt-thermal footer{font-size:7pt}
 @media print{.developer-credit{display:none!important}.receipt-print{print-color-adjust:exact;-webkit-print-color-adjust:exact}.receipt-print thead{display:table-header-group}.receipt-print tr{break-inside:avoid}.receipt-print footer{break-inside:avoid}}
+
+/* Shared business letterhead for browser print and thermal receipts */
+.receipt-print header .business-letterhead-detail { font-size: 9pt; line-height: 1.45; font-weight: 400; overflow-wrap: anywhere; margin: 2px 0; color: #49381d; }
+.receipt-print header { break-inside: avoid; text-align: center; }
+.receipt-print.receipt-thermal header h1 { font-size: 14pt; }
+.receipt-print.receipt-thermal header .business-letterhead-detail { font-size: 8pt; }

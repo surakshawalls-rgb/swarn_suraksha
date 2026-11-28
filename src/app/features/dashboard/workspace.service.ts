@@ -1,3 +1,4 @@
+import { buildBusinessLetterhead, BusinessLetterhead } from '../../core/financial/business-letterhead';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { User } from '@supabase/supabase-js';
@@ -6,6 +7,7 @@ import { SupabaseService } from '../../core/supabase/supabase.service';
 export interface BusinessWorkspace {
   id: string;
   name: string;
+  letterhead?: BusinessLetterhead;
   role: 'owner' | 'admin' | 'staff';
 }
 
@@ -54,18 +56,22 @@ export class WorkspaceService {
 
     const businessIds = memberships.map(row => row.business_id);
     const businessResult = await this.runRequest('Loading your workspaces', signal => client.from('business_profiles')
-      .select('id, business_name')
+      .select('*')
       .in('id', businessIds)
       .abortSignal(signal));
     if (businessResult.error) throw this.describe('Loading your workspaces', businessResult.error);
-    const byId = new Map((businessResult.data ?? []).map(business => [business.id, business.business_name]));
+    const settingsResult = await this.runRequest('Loading document preferences', signal => client.from('business_settings')
+      .select('business_id, document_settings').in('business_id', businessIds).abortSignal(signal)).catch(() => null);
+    const settingsById = new Map((settingsResult?.data ?? []).map(row => [row.business_id, row.document_settings]));
+    const byId = new Map((businessResult.data ?? []).map(business => [business.id, business]));
     // Membership rows alone do not authorize access. Only businesses returned
     // by the business_profiles query (and therefore permitted by its RLS) can
     // become selectable workspaces. Hidden/revoked memberships are excluded.
     const workspaces = memberships.flatMap(row => {
-      const name = byId.get(row.business_id);
-      if (!name) return [];
-      return [{ id: row.business_id, name, role: row.role as BusinessWorkspace['role'] }];
+      const profile = byId.get(row.business_id);
+      if (!profile) return [];
+      const name = profile.business_name;
+      return [{ id: row.business_id, name, letterhead: buildBusinessLetterhead(profile as unknown as Record<string, unknown>, settingsById.get(row.business_id) ?? (settingsResult?.error || !settingsResult ? {show_tagline:false,show_proprietor:false,show_landmark:false,show_gstin:false,show_whatsapp:false,show_website:false} : {})), role: row.role as BusinessWorkspace['role'] }];
     });
 
     const storedId = localStorage.getItem('swarn-suraksha.active-business');

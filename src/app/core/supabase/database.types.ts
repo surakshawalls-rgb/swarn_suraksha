@@ -24,6 +24,10 @@ export interface Database {
         Update: { business_name?: string; legal_name?: string | null; business_type?: string; phone?: string | null; email?: string | null; address?: Record<string, unknown>; currency_code?: string; timezone?: string; updated_at?: string };
         Relationships: [];
       };
+      business_settings: {
+        Row: { business_id: string; document_settings: Record<string, unknown> };
+        Insert: never; Update: never; Relationships: [];
+      };
       business_members: {
         Row: { id: string; business_id: string; user_id: string; role: 'owner' | 'admin' | 'staff' | 'viewer'; status: string; created_at: string };
         Insert: { business_id: string; user_id: string; role?: 'owner' | 'admin' | 'staff' | 'viewer'; status?: string; created_at?: string };

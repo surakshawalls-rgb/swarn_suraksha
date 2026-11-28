@@ -12,3 +12,5 @@ supabase/.temp/
 .env
 .env.*
 !.env.example
+
+/backups/
