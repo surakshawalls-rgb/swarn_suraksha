@@ -59,7 +59,7 @@ const SHELL_TEXT: Record<AppLanguage, Record<string, string>> = {
 @Injectable({ providedIn: 'root' })
 export class UiPrefsService {
   theme: ThemeMode = 'day';
-  language: AppLanguage = 'hinglish';
+  language: AppLanguage = 'en';
 
   private observer: MutationObserver | null = null;
   private readonly originals = new WeakMap<Text, string>();
@@ -68,8 +68,8 @@ export class UiPrefsService {
 
   constructor() {
     this.theme = this.read<ThemeMode>(THEME_KEY, ['auto', 'day', 'night'], 'day');
-    this.language = this.read<AppLanguage>(LANG_KEY, ['en', 'hinglish', 'hi'], 'hinglish');
-  }
+    this.language = this.read<AppLanguage>(LANG_KEY, ['en', 'hinglish', 'hi'], 'en');
+    }
 
   /** Called once from the root component. */
   start(): void {

@@ -8,12 +8,13 @@ import { WorkspaceService } from '../dashboard/workspace.service';
 @Component({
   standalone: true,
   imports: [CommonModule, IonicModule],
-  template: `<main class="callback-page"><div class="callback-card"><span class="spinner" *ngIf="busy"></span><div class="brand-mark" *ngIf="!busy">S</div><h1>{{message}}</h1><p *ngIf="errorMessage" class="form-error">{{errorMessage}}</p><div class="callback-actions" *ngIf="profileSetupFailed"><button class="create-button" (click)="retryProfile()" [disabled]="busy">{{busy ? 'Retrying…' : 'Retry profile setup'}}</button><button class="inline-button" (click)="continueToWorkspace()" [disabled]="busy">Continue to workspace</button></div><div class="callback-actions" *ngIf="!busy && errorMessage && !profileSetupFailed"><button class="create-button" (click)="goToLogin()">Return to sign-in</button></div></div></main>`
+  template: `<main class="callback-page"><div class="callback-card"><span class="spinner" *ngIf="busy"></span><div class="brand-mark" *ngIf="!busy">S</div><h1>{{message}}</h1><p *ngIf="errorMessage" class="form-error">{{errorMessage}}</p><div class="callback-actions" *ngIf="profileSetupFailed"><button class="create-button" (click)="retryProfile()" [disabled]="busy">{{busy ? 'Retrying…' : 'Retry profile setup'}}</button><button class="inline-button" (click)="continueToWorkspace()" [disabled]="busy">Continue to workspace</button></div><div class="callback-actions" *ngIf="busy && slow"><button class="create-button" (click)="goToLogin()">Return to sign-in</button></div><div class="callback-actions" *ngIf="!busy && errorMessage && !profileSetupFailed"><button class="create-button" (click)="goToLogin()">Return to sign-in</button></div></div></main>`
 })
 export class AuthCallbackComponent implements OnInit {
   message = 'Completing secure sign-in…';
   errorMessage = '';
   busy = true;
+  slow = false;
   profileSetupFailed = false;
 
   constructor(
@@ -25,6 +26,8 @@ export class AuthCallbackComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    // If sign-in takes unusually long, offer a way back to the login page instead of an endless spinner.
+    setTimeout(() => { if (this.busy) { this.slow = true; this.changeDetector.markForCheck(); } }, 8000);
     const providerError = this.route.snapshot.queryParamMap.get('error_description')
       ?? this.route.snapshot.queryParamMap.get('error');
     if (providerError) {
@@ -34,7 +37,7 @@ export class AuthCallbackComponent implements OnInit {
         ? 'Google sign-in was canceled. You can try again.'
         : `Authentication did not complete: ${providerError}`;
       this.message = 'Sign-in was not completed';
-      await this.router.navigate(['/login'], { queryParams: { error_description: this.errorMessage } });
+      await this.router.navigate(['/login'], { queryParams: { error_description: this.errorMessage }, replaceUrl: true });
       return;
     }
     try {
@@ -42,7 +45,7 @@ export class AuthCallbackComponent implements OnInit {
       if (this.auth.user) {
         try {
           await this.workspace.ensureProfile();
-          await this.router.navigateByUrl('/account');
+          await this.router.navigateByUrl('/account', { replaceUrl: true });
         } catch (error) {
           this.busy = false;
           this.profileSetupFailed = true;
@@ -54,7 +57,7 @@ export class AuthCallbackComponent implements OnInit {
       else {
         this.busy = false;
         this.auth.cancelOAuthAttempt();
-        await this.router.navigate(['/login'], { queryParams: { reason: 'session' } });
+        await this.router.navigate(['/login'], { queryParams: { reason: 'session' }, replaceUrl: true });
       }
     } catch (error) {
       this.busy = false;
@@ -71,7 +74,7 @@ export class AuthCallbackComponent implements OnInit {
     try {
       await this.workspace.ensureProfile();
       this.profileSetupFailed = false;
-      await this.router.navigateByUrl('/account');
+      await this.router.navigateByUrl('/account', { replaceUrl: true });
     } catch (error) {
       this.errorMessage = error instanceof Error ? error.message : 'Could not save your user profile.';
     } finally {
@@ -81,11 +84,11 @@ export class AuthCallbackComponent implements OnInit {
   }
 
   async continueToWorkspace(): Promise<void> {
-    await this.router.navigateByUrl('/account');
+    await this.router.navigateByUrl('/account', { replaceUrl: true });
   }
 
   async goToLogin(): Promise<void> {
     this.auth.cancelOAuthAttempt();
-    await this.router.navigate(['/login'], { queryParams: { error_description: this.errorMessage } });
+    await this.router.navigate(['/login'], { queryParams: { error_description: this.errorMessage }, replaceUrl: true });
   }
 }
