@@ -55,6 +55,37 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
         </nav>
         <a routerLink="/account" style="color:inherit;padding:12px">Account &amp; security</a><div class="shell-user"><span class="avatar">{{initials}}</span><span><b>{{userName}}</b><small>Signed in securely</small></span><button type="button" (click)="signOut()" [disabled]="busy">Sign out</button></div>
       </aside>
+      <header class="mobile-top" *ngIf="activeWorkspace">
+        <a class="mobile-top-brand" routerLink="/dashboard"><span class="brand-mark">S</span><b>SwarnaSuraksha</b></a>
+        <span class="mobile-top-biz">{{activeWorkspace.name}}</span>
+      </header>
+      <div class="more-backdrop" *ngIf="moreOpen" (click)="moreOpen = false"></div>
+      <section class="more-sheet" *ngIf="moreOpen" role="dialog" aria-label="More options" data-no-translate>
+        <div class="more-grip"></div>
+        <div class="more-user"><span class="avatar">{{initials}}</span><span><b>{{userName}}</b><small>{{activeWorkspace?.name || 'Signed in securely'}}</small></span></div>
+        <label class="more-workspace" *ngIf="workspaces.length > 1">Business workspace
+          <select [ngModel]="activeWorkspace?.id ?? ''" (ngModelChange)="selectWorkspace($event)">
+            <option value="" disabled>Select a workspace</option>
+            <option *ngFor="let item of workspaces" [value]="item.id">{{item.name}}</option>
+          </select>
+        </label>
+        <a class="more-item" routerLink="/dashboard/stock" (click)="moreOpen = false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5ZM4 8.5V17l8 4 8-4V8.5M12 13v8M8 6.2l8 4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg><span>Stock</span></a>
+        <a class="more-item" routerLink="/account" (click)="moreOpen = false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Profile &amp; account security</span></a>
+        <div class="more-group"><small>{{ui.text('theme')}}</small>
+          <div class="more-seg"><button type="button" *ngFor="let mode of themeModes" [class.on]="ui.theme === mode" (click)="ui.setTheme(mode)">{{ui.text(mode)}}</button></div>
+        </div>
+        <div class="more-group"><small>{{ui.text('language')}}</small>
+          <div class="more-seg"><button type="button" *ngFor="let lang of languages" [class.on]="ui.language === lang" (click)="ui.setLanguage(lang)">{{languageLabel(lang)}}</button></div>
+        </div>
+        <button type="button" class="more-item more-signout" (click)="moreOpen = false; signOut()" [disabled]="busy"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sign out</span></button>
+      </section>
+      <nav class="bottom-nav" aria-label="Bottom navigation" *ngIf="activeWorkspace || workspaces.length">
+        <a routerLink="/dashboard" routerLinkActive="selected" [routerLinkActiveOptions]="{ exact: true }" (click)="moreOpen = false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Home</span></a>
+        <a routerLink="/dashboard/sales" routerLinkActive="selected" (click)="moreOpen = false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h10v18l-2.5-1.6L12 21l-2.5-1.6L7 21V3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 8h4M10 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Bill</span></a>
+        <a routerLink="/dashboard/customers" routerLinkActive="selected" (click)="moreOpen = false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19v-1.5A4.5 4.5 0 0 1 8 13h2a4.5 4.5 0 0 1 4.5 4.5V19M16 5.5a3 3 0 0 1 0 5.8M17 13h.5a3 3 0 0 1 3 3V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Khata</span></a>
+        <a routerLink="/dashboard/girvi" routerLinkActive="selected" (click)="moreOpen = false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg><span>Girvi</span></a>
+        <button type="button" class="more-tab" [class.selected]="moreOpen" (click)="moreOpen = !moreOpen" aria-haspopup="dialog" [attr.aria-expanded]="moreOpen"><span class="more-avatar">{{initials}}</span><span>More</span></button>
+      </nav>
       <main class="app-main"><div class="config-banner error-banner" *ngIf="!(network.online$ | async)" role="alert"><span class="banner-icon">!</span><div><b>You are offline</b><p>Financial posting is disabled until the connection returns. An interrupted request may still have reached Supabase; retry it using the same idempotency-safe action.</p></div></div><div class="workspace-prompt" *ngIf="workspaces.length > 1 && !activeWorkspace" role="status"><b>Select a business workspace</b><span>Choose one above to load tenant-scoped records.</span></div><router-outlet /><div class="developer-credit"><span>Designed &amp; developed by</span><a href="https://www.surakshasoftware.in/" target="_blank" rel="noopener noreferrer">Suraksha Software</a></div></main>
     </div>
 
@@ -105,6 +136,46 @@ import { BusinessWorkspace, WorkspaceService } from './workspace.service';
     }
     .pref-menu button:hover { background: rgba(255, 255, 255, .09); }
     .pref-menu button.on { color: #2a1d06; background: linear-gradient(180deg, #f6e7b4, #d9b25a); }
+
+    .mobile-top, .bottom-nav, .more-sheet, .more-backdrop { display: none; }
+    @media (max-width: 900px) {
+      .app-sidebar { display: none !important; }
+      .app-shell { display: block; }
+      .app-main { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+      .mobile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 40; min-height: 52px; padding: 8px 14px; background: #17251f; color: #f7f4ec; border-bottom: 1px solid rgba(236,209,131,.2); }
+      .mobile-top-brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 0; }
+      .mobile-top-brand .brand-mark { width: 30px; height: 30px; font-size: 17px; }
+      .mobile-top-brand b { font: 700 16px 'Playfair Display', serif; white-space: nowrap; }
+      .mobile-top-biz { color: #ecd183; font-size: 12px; font-weight: 700; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; justify-content: space-around; align-items: stretch; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); background: #17251f; border-top: 1px solid rgba(236,209,131,.25); box-shadow: 0 -8px 24px -12px rgba(0,0,0,.5); }
+      .bottom-nav a, .bottom-nav .more-tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; padding: 4px 2px; margin: 0; border: 0; background: none; color: #aab8ae; font: 600 11px 'DM Sans', sans-serif; text-decoration: none; cursor: pointer; border-radius: 12px; -webkit-tap-highlight-color: transparent; }
+      .bottom-nav a.selected, .bottom-nav .more-tab.selected { color: #ecd183; }
+      .bottom-nav a.selected svg { stroke-width: 2.2; filter: drop-shadow(0 0 6px rgba(236,209,131,.5)); }
+      .more-avatar { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(180deg, #fbe9ae, #d9b25a); color: #2a1d06; font: 700 12px 'DM Sans', sans-serif; }
+      .more-tab.selected .more-avatar { box-shadow: 0 0 0 2px #17251f, 0 0 0 4px #ecd183; }
+      .more-backdrop { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.45); }
+      .more-sheet { display: grid; gap: 6px; position: fixed; left: 8px; right: 8px; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); z-index: 80; max-height: 75vh; overflow-y: auto; padding: 10px 12px 12px; border: 1px solid rgba(236,209,131,.35); border-radius: 20px; background: #1b2c23; color: #f4efe0; box-shadow: 0 -16px 40px -12px rgba(0,0,0,.7); animation: more-up .18s ease-out; }
+      @keyframes more-up { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+      .more-grip { width: 38px; height: 4px; margin: 0 auto 4px; border-radius: 4px; background: rgba(255,255,255,.25); }
+      .more-user { display: flex; align-items: center; gap: 12px; padding: 6px 4px 10px; border-bottom: 1px solid rgba(255,255,255,.1); }
+      .more-user .avatar { width: 40px; height: 40px; font-size: 15px; }
+      .more-user > span:last-child { min-width: 0; }
+      .more-user b, .more-user small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .more-user b { font-size: 14px; color: #fff; }
+      .more-user small { margin-top: 3px; font-size: 12px; color: #9fb0a4; }
+      .more-workspace { display: grid; gap: 6px; padding: 6px 4px; font-size: 11px; color: #9fb0a4; }
+      .more-workspace select { width: 100%; padding: 10px; border: 1px solid #435148; border-radius: 10px; color: #fff; background: #23332a; font-size: 14px; }
+      .more-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; padding: 0 12px; margin: 0; border: 0; border-radius: 12px; background: transparent; color: #f4efe0; font: 600 15px 'DM Sans', sans-serif; text-align: left; text-decoration: none; cursor: pointer; }
+      .more-item:active, .more-item:hover { background: rgba(255,255,255,.08); }
+      .more-item svg { color: #ecd183; flex: none; }
+      .more-signout { color: #ffb4a8; border-top: 1px solid rgba(255,255,255,.1); border-radius: 0 0 12px 12px; margin-top: 4px; }
+      .more-signout svg { color: #ffb4a8; }
+      .more-group { display: grid; gap: 6px; padding: 6px 4px; }
+      .more-group small { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #9fb0a4; }
+      .more-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 3px; border-radius: 12px; background: rgba(255,255,255,.07); }
+      .more-seg button { min-height: 38px; margin: 0; border: 0; border-radius: 9px; background: transparent; color: #d7e0d9; font: 600 13px 'DM Sans', 'Noto Sans Devanagari', sans-serif; cursor: pointer; }
+      .more-seg button.on { color: #2a1d06; background: linear-gradient(180deg, #f6e7b4, #d9b25a); }
+    }
     @media (max-width: 900px) {
       .shell-prefs { grid-template-columns: 1fr 1fr; margin: 0 12px 10px; }
       .pref-text small { display: none; }
@@ -126,6 +197,7 @@ export class WorkspaceShellComponent implements OnInit, OnDestroy {
 
   constructor(private readonly auth: AuthService, private readonly workspace: WorkspaceService, private readonly router: Router, readonly network: NetworkStatusService, private readonly cdr: ChangeDetectorRef, readonly ui: UiPrefsService) {}
 
+  moreOpen = false;
   openMenu: 'theme' | 'language' | null = null;
   readonly themeModes: ThemeMode[] = ['auto', 'day', 'night'];
   readonly languages: AppLanguage[] = ['en', 'hinglish', 'hi'];
@@ -138,6 +210,8 @@ export class WorkspaceShellComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event']) closeMenus(event: Event): void {
     if (this.openMenu && !(event.target as HTMLElement | null)?.closest('.shell-prefs')) this.openMenu = null;
   }
+
+  @HostListener('document:keydown.escape') closeMore(): void { this.moreOpen = false; }
 
   get userName(): string { return this.auth.user?.email ?? this.auth.user?.phone ?? 'Signed in'; }
   get initials(): string { return this.userName.slice(0, 1).toUpperCase(); }
