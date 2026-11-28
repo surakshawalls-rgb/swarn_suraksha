@@ -638,3 +638,17 @@ html[data-ss-theme='dark'] .app-main .list-footer { border-top-color: rgba(255,2
 html[data-ss-theme='dark'] .app-main .girvi-overview article, html[data-ss-theme='dark'] .app-main .stock-metal-card { border-color: rgba(255,255,255,.1); background: linear-gradient(180deg, #22352b, #1b2b22); box-shadow: none; }
 html[data-ss-theme='dark'] .app-main .girvi-item, html[data-ss-theme='dark'] .app-main .girvi-payment, html[data-ss-theme='dark'] .app-main .stock-item-draft, html[data-ss-theme='dark'] .app-main .quick-customer, html[data-ss-theme='dark'] .app-main .girvi-total, html[data-ss-theme='dark'] .app-main .stock-payment-box { border-color: rgba(255,255,255,.1); background: rgba(255,255,255,.04); }
 html[data-ss-theme='dark'] .app-main .girvi-payment input, html[data-ss-theme='dark'] .app-main .girvi-payment select, html[data-ss-theme='dark'] .app-main .stock-item-draft input, html[data-ss-theme='dark'] .app-main .stock-item-draft select, html[data-ss-theme='dark'] .app-main .stock-filters select, html[data-ss-theme='dark'] .app-main .stock-modal input, html[data-ss-theme='dark'] .app-main .stock-modal select, html[data-ss-theme='dark'] .app-main .stock-modal textarea, html[data-ss-theme='dark'] .app-main .girvi-item input, html[data-ss-theme='dark'] .app-main .girvi-item select, html[data-ss-theme='dark'] .app-main .purchase-form input, html[data-ss-theme='dark'] .app-main .purchase-form select, html[data-ss-theme='dark'] .app-main .purchase-form textarea, html[data-ss-theme='dark'] .app-main .payment-line input, html[data-ss-theme='dark'] .app-main .payment-line select { border-color: rgba(236,209,131,.25); background: #22352b; color: #f4efe0; }
+
+/* ---------- Mobile fix: "Customer account history" cards overlapped the next section ----------
+   On phones the ledger table is shown as stacked cards (overflow: visible), but the desktop rule in
+   product.scss still capped its wrapper at max-height: 320px. The cards spilled out of that 320px box
+   and painted over "Selected customer details". Let the wrapper grow with its content instead. */
+@media (max-width: 900px) {
+  .app-main .outstanding-ledger .table-wrap,
+  .app-main .outstanding-ledger .table-wrap:has(.stack-table) {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .app-main .outstanding-ledger { overflow: visible; }
+}
