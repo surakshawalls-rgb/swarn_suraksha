@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { SupabaseService } from '../../core/supabase/supabase.service';
 import { LOGIN_COPY, copyText } from '../../core/ui/auth-copy';
 import { AppLanguage, UiPrefsService } from '../../core/ui/ui-prefs.service';
 
-@Component({standalone:true, imports:[CommonModule,FormsModule,RouterLink], styleUrls:['./login-premium.scss'], template:`
+@Component({standalone:true, imports:[CommonModule,FormsModule], styleUrls:['./login-premium.scss'], template:`
 <main class="ss-login-page" data-no-translate>
   <div class="ss-login-container">
 
@@ -72,11 +72,6 @@ import { AppLanguage, UiPrefsService } from '../../core/ui/ui-prefs.service';
       </div>
 
     </section>
-
-    <div class="ss-guest-strip">
-      <span>{{t('guestQ')}}</span>
-      <a routerLink="/personal" class="ss-guest">{{t('guest')}}</a>
-    </div>
 
     <div class="ss-security-note">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
