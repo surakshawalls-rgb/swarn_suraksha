@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, businessGuard } from './core/auth/auth.guard';
+import { authGuard, businessGuard, startGuard } from './core/auth/auth.guard';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LoginComponent } from './features/login/login.component';
 import { AuthCallbackComponent } from './features/login/auth-callback.component';
@@ -10,7 +10,7 @@ import { GirviComponent } from './features/girvi/girvi.component';
 import { StockWorkspaceComponent } from './features/stock/stock-workspace.component';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'login' },
+  { path: '', pathMatch: 'full', canActivate: [startGuard], children: [] },
   { path: 'account', canActivate: [authGuard], loadComponent: () => import('./features/login/account.component').then(m => m.AccountComponent) },
   { path: 'personal', loadComponent: () => import('./features/login/personal.component').then(m => m.PersonalComponent) },
   { path: 'login', component: LoginComponent },

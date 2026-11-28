@@ -43,19 +43,32 @@ export class AuthService implements OnDestroy {
   private async restoreSession(): Promise<void> {
     const client = this.supabase.client;
     if (!client) { this.readyState.next(true); return; }
-    const { data, error } = await this.withTimeout(client.auth.getSession(), 'Restoring your Supabase session');
-    if (error) throw error;
-    this.sessionState.next(data.session);
-    this.readyState.next(true);
+    // The saved session lives in local storage. On a cold start the network can be slow or not ready yet
+    // (the access token may need a refresh), so retry a few times instead of treating one slow attempt as
+    // "signed out". The stored session is never discarded here; only an explicit sign-out removes it.
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { data, error } = await this.withTimeout(client.auth.getSession(), 'Restoring your Supabase session', attempt === 0 ? 12000 : 8000);
+        if (error) throw error;
+        this.sessionState.next(data.session);
+        this.readyState.next(true);
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 1200 * (attempt + 1)));
+      }
+    }
+    throw lastError;
   }
 
-  private async withTimeout<T>(request: PromiseLike<T>, action: string): Promise<T> {
+  private async withTimeout<T>(request: PromiseLike<T>, action: string, timeoutMs = 12000): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       return await Promise.race([
         Promise.resolve(request),
         new Promise<T>((_, reject) => {
-          timer = setTimeout(() => reject(new Error(`${action} timed out. Check your connection and retry.`)), 12000);
+          timer = setTimeout(() => reject(new Error(`${action} timed out. Check your connection and retry.`)), timeoutMs);
         })
       ]);
     } finally {

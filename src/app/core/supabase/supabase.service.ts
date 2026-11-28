@@ -10,6 +10,8 @@ export class SupabaseService {
     ? createClient<Database>(environment.supabaseUrl, environment.supabaseAnonKey, {
         auth: {
           persistSession: true,
+          // Keep the session in local storage so the user stays signed in across app restarts until they sign out.
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
           autoRefreshToken: true,
           detectSessionInUrl: true
         }

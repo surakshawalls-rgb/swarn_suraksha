@@ -1,1 +1,79 @@
-.access-page{min-height:100%;padding:24px 16px;display:grid;place-items:start center;background:#f6f2e9;color:#29271f}.access-card{width:min(100%,760px);box-sizing:border-box;background:#fff;border:1px solid #e4dac3;border-radius:20px;padding:clamp(18px,4vw,36px);box-shadow:0 12px 40px #44320d12}.access-card h1{font-size:28px;margin:12px 0}.access-card h2{font-size:19px;margin:24px 0 12px}.access-card p{line-height:1.5}.access-card label{display:grid;gap:6px;margin:12px 0;font-size:14px}.access-card input,.access-card select,.access-card textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #c9c0ad;border-radius:8px;background:white;color:#29271f}.access-card button,.access-card a.action{display:inline-block;background:#88651e;color:white;border:0;border-radius:9px;padding:12px 16px;margin:5px 5px 5px 0;font-weight:600;cursor:pointer}.access-card button.secondary{background:#eee8db;color:#29271f}.access-card button:disabled{opacity:.5;cursor:not-allowed}.access-card a{color:#795717}.access-card .error{color:#a32323}.access-card article{border:1px solid #e4dac3;padding:14px;border-radius:12px;margin:12px 0}.access-card footer{margin-top:24px;font-size:12px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 16px}
+.access-page{min-height:100%;padding:24px 16px;display:grid;place-items:start center;background:#f6f2e9;color:#29271f}
+.access-card{width:min(100%,760px);box-sizing:border-box;background:#fff;border:1px solid #e4dac3;border-radius:20px;padding:clamp(18px,4vw,36px);box-shadow:0 12px 40px #44320d12}
+.access-card h1{font-size:28px;margin:12px 0}
+.access-card h2{font-size:19px;margin:24px 0 12px}
+.access-card p{line-height:1.5}
+.access-card label{display:grid;gap:6px;margin:12px 0;font-size:14px}
+.access-card input,.access-card select,.access-card textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #c9c0ad;border-radius:8px;background:white;color:#29271f}
+.access-card button,.access-card a.action{display:inline-block;background:#88651e;color:white;border:0;border-radius:9px;padding:12px 16px;margin:5px 5px 5px 0;font-weight:600;cursor:pointer}
+.access-card button.secondary{background:#eee8db;color:#29271f}
+.access-card button:disabled{opacity:.5;cursor:not-allowed}
+.access-card a{color:#795717}
+.access-card .error{color:#a32323}
+.access-card article{border:1px solid #e4dac3;padding:14px;border-radius:12px;margin:12px 0}
+.access-card footer{margin-top:24px;font-size:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 16px}
+
+/* ===== Premium look (signed-in user view; admin dashboard keeps its own styles) ===== */
+.acc-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.acc-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.acc-logo { width: 50px; height: 50px; flex: none; display: grid; place-items: center; border-radius: 15px; color: #fff; font: 700 26px/1 Georgia, 'Times New Roman', serif; background: linear-gradient(145deg, #a37a28, #6e5019); box-shadow: 0 8px 20px rgba(136, 101, 30, 0.26); }
+.acc-title { min-width: 0; }
+.acc-head .eyebrow { margin: 0; color: #88651e; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; }
+.acc-head h1 { margin: 4px 0 2px; font-size: 26px; line-height: 1.2; color: #28251f; }
+.acc-head .acc-email { margin: 0; color: #777064; font-size: 14px; overflow-wrap: anywhere; }
+.acc-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.access-card .acc-head-actions button.secondary,
+.access-card .acc-head-actions a.acc-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; margin: 0; padding: 0 16px; border: 1.5px solid #e5dccb; border-radius: 11px; background: #fff; color: #28251f; font-size: 13.5px; font-weight: 700; text-decoration: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.access-card .acc-head-actions button.secondary:hover:not(:disabled),
+.access-card .acc-head-actions a.acc-ghost:hover { border-color: #88651e; box-shadow: 0 6px 14px rgba(136, 101, 30, 0.12); }
+
+.admin-access-page.acc-user { padding: 32px 16px 28px; font-family: 'DM Sans', Arial, sans-serif; background: radial-gradient(ellipse at 10% 0%, #e8d9b8 0%, transparent 38%), radial-gradient(ellipse at 100% 100%, #e9dfca 0%, transparent 35%), #f7f5ef; }
+.admin-access-page.acc-user .access-card:not(.admin-card) { width: 100%; max-width: 720px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.acc-user .acc-head { padding: 22px 24px; border: 1px solid rgba(229, 220, 203, 0.9); border-radius: 20px; background: #fff; box-shadow: 0 18px 46px rgba(76, 58, 20, 0.1), 0 2px 6px rgba(76, 58, 20, 0.04); }
+
+.acc-card { margin: 16px 0 0; padding: 22px 24px; border: 1px solid rgba(229, 220, 203, 0.9); border-radius: 18px; background: #fff; box-shadow: 0 10px 30px rgba(76, 58, 20, 0.07); }
+.access-card .acc-card h2 { margin: 0 0 6px; font-size: 18px; color: #28251f; }
+.access-card .acc-card p.acc-desc { margin: 0 0 16px; color: #777064; font-size: 14px; }
+.acc-card form { max-width: 440px; }
+.acc-card label { margin: 0 0 14px; color: #28251f; font-size: 13px; font-weight: 700; }
+.access-card .acc-card input,
+.access-card .acc-card select { min-height: 48px; padding: 0 14px; border: 1.5px solid #e5dccb; border-radius: 12px; background: #fdfcf9; font: inherit; font-size: 15px; font-weight: 400; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.access-card .acc-card input:focus,
+.access-card .acc-card select:focus { outline: none; border-color: #88651e; background: #fff; box-shadow: 0 0 0 4px rgba(136, 101, 30, 0.14); }
+.access-card .acc-card button,
+.access-card .acc-card a.action { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; margin: 4px 0 0; padding: 0 22px; border: 0; border-radius: 12px; color: #fff; font-size: 14.5px; font-weight: 700; text-decoration: none; background: linear-gradient(145deg, #94702a, #6e5019); box-shadow: 0 8px 18px rgba(110, 80, 25, 0.24); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.access-card .acc-card button:hover:not(:disabled),
+.access-card .acc-card a.action:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(110, 80, 25, 0.3); }
+.access-card .acc-card button:disabled { opacity: 1; background: #d9cfb9; box-shadow: none; cursor: not-allowed; }
+.acc-head-actions button:focus-visible, .acc-head-actions a:focus-visible, .acc-card button:focus-visible, .acc-card a.action:focus-visible { outline: 3px solid rgba(136, 101, 30, 0.35); outline-offset: 2px; }
+
+.access-card .acc-card article.acc-item { margin: 14px 0 0; padding: 14px 16px; border: 1px solid #eee5d3; border-radius: 14px; background: #fdfbf6; }
+.acc-item-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.acc-item-top b { font-size: 15.5px; overflow-wrap: anywhere; }
+.acc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { display: inline-flex; align-items: center; padding: 3px 11px; border-radius: 999px; background: #f1ebdd; color: #5d5547; font-size: 12px; font-weight: 700; text-transform: capitalize; white-space: nowrap; }
+.chip.ok { background: #e7f4e8; color: #24602a; }
+.chip.warn { background: #fff4dc; color: #8a5a00; }
+.chip.bad { background: #fdecea; color: #a32323; }
+.access-card .acc-card p.acc-note { margin: 10px 0 0; color: #5d5547; font-size: 13.5px; }
+.access-card .acc-card p.acc-empty { margin: 4px 0 0; color: #8b8373; font-size: 14px; }
+.access-card .acc-card p.acc-hint { margin: 0; padding: 10px 12px; border-radius: 10px; background: #f6efdf; color: #5d5547; font-size: 13px; }
+
+.acc-alert { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; font-size: 14px; }
+.access-card .acc-alert.info { border: 1px solid #e5dccb; background: #fbf8f0; color: #5d5547; }
+.access-card .acc-alert.success { border: 1px solid #c6dfc8; background: #f1f9f1; color: #24602a; }
+.access-card .acc-alert.error { border: 1px solid #efc4bd; background: #fff3f1; color: #8f2a1d; }
+.acc-user footer { margin-top: 22px; color: #777064; text-align: center; }
+
+@media (max-width: 600px) {
+  .admin-access-page.acc-user { padding: 14px 12px 20px; }
+  .acc-user .acc-head { padding: 18px; }
+  .acc-head h1 { font-size: 22px; }
+  .acc-head-actions { width: 100%; }
+  .access-card .acc-head-actions button.secondary, .access-card .acc-head-actions a.acc-ghost { flex: 1 1 auto; }
+  .acc-card { padding: 18px; }
+  .acc-card form { max-width: none; }
+  .access-card .acc-card button, .access-card .acc-card a.action { width: 100%; }
+  .access-card .acc-card input, .access-card .acc-card select { font-size: 16px; }
+}
